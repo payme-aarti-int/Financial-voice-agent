@@ -1,0 +1,147 @@
+cases:
+
+  - id: factual_single_month_march
+    category: factual
+    question: "What was revenue in March?"
+    expects_tool: get_revenue_range
+    must_contain: ['142']
+
+  - id: factual_single_month_january
+    category: factual
+    question: "How much revenue did we make in January?"
+    expects_tool: get_revenue_range
+    must_contain: ['120']
+
+  - id: factual_quarter
+    category: factual
+    question: "What was total revenue in Q1?"
+    expects_tool: get_revenue_range
+    must_contain: ['397']
+
+  - id: factual_range_explicit
+    category: factual
+    question: "What was revenue between January and March?"
+    expects_tool: get_revenue_range
+    must_contain: ['397']
+
+  - id: factual_half_year
+    category: factual
+    question: "What was revenue in the first half of the year?"
+    expects_tool: get_revenue_range
+
+  - id: factual_full_year
+    category: factual
+    question: "What was total revenue for 2025?"
+    expects_tool: get_revenue_range
+
+  - id: refuse_future_month
+    category: refusal
+    question: "What was revenue in January 2026?"
+    expects_refusal: true
+    must_not_contain: ['120,000', '165', '166']
+
+  - id: refuse_past_month
+    category: refusal
+    question: "What was revenue in December 2024?"
+    expects_refusal: true
+
+  - id: refuse_old_year
+    category: refusal
+    question: "How much revenue did we make in 2019?"
+    expects_refusal: true
+
+  - id: refuse_burn_rate
+    category: refusal
+    question: "What is our burn rate?"
+    expects_tool: null
+    expects_refusal: true
+
+  - id: refuse_runway
+    category: refusal
+    question: "How much runway do we have left?"
+    expects_tool: null
+    expects_refusal: true
+
+  - id: refuse_cash_position
+    category: refusal
+    question: "What is our current cash position?"
+    expects_tool: null
+    expects_refusal: true
+
+  - id: refuse_profit
+    category: refusal
+    question: "What was our profit margin last quarter?"
+    expects_tool: null
+    expects_refusal: true
+
+  - id: refuse_headcount
+    category: refusal
+    question: "How many employees do we have?"
+    expects_tool: null
+    expects_refusal: true
+
+  - id: disambig_summary_vague
+    category: disambiguation
+    question: "How are we doing overall?"
+    expects_tool: get_summary
+
+  - id: disambig_summary_best
+    category: disambiguation
+    question: "What was our best month?"
+    expects_tool: get_summary
+
+  - id: disambig_summary_trend
+    category: disambiguation
+    question: "Is revenue growing or shrinking?"
+    expects_tool: get_summary
+
+  - id: disambig_growth_explicit
+    category: disambiguation
+    question: "How much did revenue change from January to June?"
+    expects_tool: get_growth
+
+  - id: disambig_growth_open_ended
+    category: disambiguation
+    question: "How much have we grown since January?"
+    expects_tool: get_growth
+
+  - id: disambig_growth_vs_total
+    category: disambiguation
+    question: "Did we make more in March than in January?"
+    expects_tool: get_growth
+
+  - id: phrasing_march_1
+    category: phrasing
+    question: "March revenue?"
+    expects_tool: get_revenue_range
+    must_contain: ['142']
+
+  - id: phrasing_march_2
+    category: phrasing
+    question: "How much came in during March?"
+    expects_tool: get_revenue_range
+    must_contain: ['142']
+
+  - id: phrasing_march_3
+    category: phrasing
+    question: "What did we bring in in March?"
+    expects_tool: get_revenue_range
+    must_contain: ['142']
+
+  - id: phrasing_march_4
+    category: phrasing
+    question: "Tell me the March number."
+    expects_tool: get_revenue_range
+    must_contain: ['142']
+
+  - id: spoken_no_symbols
+    category: spoken
+    question: "What was revenue in February?"
+    expects_tool: get_revenue_range
+    spoken_must_not_contain: ['$', '*', '#', '2025-02']
+
+  - id: spoken_no_iso_dates
+    category: spoken
+    question: "What was our best month?"
+    expects_tool: get_summary
+    spoken_must_not_contain: ['2025-', '$']
