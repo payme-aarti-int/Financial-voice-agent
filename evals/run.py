@@ -136,8 +136,23 @@ def run(category: str | None, verbose: bool, threshold: float) -> int:
                 question=case["question"],
             )
  
+            turn = None
+            for attempt in range(4):
+                try:
+                    turn = pipeline.run_text(case["question"], autoplay=False)
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    # 429 means we are asking too fast, not that the agent
+                    # is wrong. Back off and retry rather than scoring it.
+                    if "429" in str(exc) and attempt < 3:
+                        time.sleep(5 * (attempt + 1))
+                        continue
+                    result.errored = True
+                    result.failures.append(f"ERROR {type(exc).__name__}: {exc}")
+                    break
             try:
-                turn = pipeline.run_text(case["question"], autoplay=False)
+                if turn is None:
+                    raise RuntimeError("no result")
                 result.answer = turn.agent_turn.answer if turn.agent_turn else ""
                 result.spoken = turn.spoken_text
                 result.tools_called = [c["name"] for c in turn.tool_calls]
@@ -177,14 +192,19 @@ def report(results: list[CaseResult], threshold: float) -> int:
         print(f"{len(errored)} case(s) errored (API/infra) and were not scored")
  
     categories: dict[str, list[CaseResult]] = {}
-    for result in results:
+    for result in scored:
         categories.setdefault(result.category, []).append(result)
+    errored_by_cat: dict[str, int] = {}
+    for result in errored:
+        errored_by_cat[result.category] = errored_by_cat.get(result.category, 0) + 1
  
     print("\n  category           passed      rate")
     print("  " + "-" * 40)
     for name, group in sorted(categories.items()):
         ok = sum(1 for r in group if r.passed)
-        print(f"  {name:<18} {ok:>2}/{len(group):<6} {ok / len(group):>8.0%}")
+        err = errored_by_cat.get(name, 0)
+        suffix = f"   ({err} errored)" if err else ""
+        print(f"  {name:<18} {ok:>2}/{len(group):<6} {ok / len(group):>8.0%}{suffix}")
  
     latencies = [r.latency_ms for r in results if r.latency_ms]
     if latencies:
