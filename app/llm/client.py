@@ -4,7 +4,6 @@ import argparse
 
 from dotenv import load_dotenv
 
-from app.audio.recorder import Recorder, peak_level
 from app.stt.whisper_stt import WhisperSTT
 from app.telemetry import Telemetry
 
