@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Financial Voice Agent</title>
+<style>
+  :root { --bg:#fff; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2e2e2;
+          --accent:#2b5cff; --panel:#f7f7f8; --warn:#b45309; --err:#b91c1c; --ok:#15803d; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#17171a; --fg:#ececed; --muted:#9a9aa0; --line:#2e2e33;
+            --accent:#6b8cff; --panel:#1f1f23; --warn:#fbbf24; --err:#f87171; --ok:#4ade80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--fg);
+         font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+         max-width:780px; margin-inline:auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:24px; }
+  .row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  input[type=text] { flex:1 1 260px; padding:10px 12px; font:inherit;
+    border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); }
+  button { padding:10px 16px; font:inherit; font-weight:500; cursor:pointer;
+    border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--fg); }
+  button.primary { background:var(--accent); color:#fff; border-color:transparent; }
+  button.rec { background:var(--err); color:#fff; border-color:transparent; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  #status { font-size:13px; color:var(--muted); min-height:20px; margin-bottom:12px; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+          margin-bottom:12px; background:var(--panel); }
+  .label { font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+           color:var(--muted); margin-bottom:4px; }
+  .answer { font-size:16px; }
+  .tools { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:var(--muted); }
+  .avail-true { color:var(--ok); } .avail-false { color:var(--warn); } .err { color:var(--err); }
+  .meter { height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:8px; }
+  .meter > div { height:100%; width:0%; background:var(--accent); transition:width .08s linear; }
+  .hint { font-size:12px; color:var(--muted); margin-top:20px; }
+</style>
+</head>
+<body>
+<h1>Financial Voice Agent</h1>
+<div class="sub">Monthly P&amp;L, Jan 2024 &ndash; Dec 2025. Every figure comes from a CSV row, never from the model.</div>
+<div class="row">
+  <input type="text" id="q" placeholder="What was EBITDA in Q3 2025?" autocomplete="off">
+  <button class="primary" id="send">Ask</button>
+  <button id="mic">Hold to talk</button>
+</div>
+<div class="meter"><div id="level"></div></div>
+<div id="status"></div>
+<div id="out"></div>
+<div class="hint">Microphone capture runs in this browser, not on the server. Speech output uses your browser's built-in voice.</div>
+<script>
+const $ = id => document.getElementById(id);
+const statusEl = $('status'), outEl = $('out'), levelEl = $('level');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const card = (l,b) => '<div class="card"><div class="label">'+l+'</div>'+b+'</div>';
+function setStatus(m,c){ statusEl.textContent=m||''; statusEl.className=c||''; }
+function speak(t){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.rate=1.05; speechSynthesis.speak(u);}catch(e){} }
+function render(d){
+  if(d.error){ outEl.innerHTML=card('Error','<span class="err">'+esc(d.error)+'</span>'); return; }
+  let h='';
+  if(d.heard) h+=card('Heard',esc(d.heard));
+  if(d.rejected) h+=card('Rejected','<span class="err">'+esc(d.rejected)+'</span>');
+  if(d.answer) h+=card('Answer','<div class="answer">'+esc(d.answer)+'</div>');
+  if(d.tools&&d.tools.length){
+    const r=d.tools.map(t=>'<div>'+esc(t.name)+'('+esc(t.arguments)+') &rarr; <span class="'+(t.available?'avail-true':'avail-false')+'">available='+t.available+'</span></div>').join('');
+    h+=card('Tool calls','<div class="tools">'+r+'</div>');
+  }
+  if(d.total_ms!=null){
+    const s=Object.entries(d.timing||{}).map(([k,v])=>k+'='+v+'ms').join('  ');
+    h+=card('Timing','<div class="tools">'+esc(s)+'  TOTAL='+d.total_ms+'ms</div>');
+  }
+  outEl.innerHTML=h;
+  if(d.spoken) speak(d.spoken);
+}
+async function ask(){
+  const t=$('q').value.trim(); if(!t) return;
+  setStatus('Thinking...'); $('send').disabled=true;
+  try{
+    const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+    render(await r.json()); setStatus('');
+  }catch(e){ setStatus('Request failed: '+e.message,'err'); }
+  finally{ $('send').disabled=false; }
+}
+$('send').onclick=ask;
+$('q').addEventListener('keydown',e=>{ if(e.key==='Enter') ask(); });
+const TARGET_RATE=16000;
+let audioCtx,source,processor,chunks=[],recording=false,stream;
+async function startRec(){
+  if(recording) return;
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}}); }
+  catch(e){ setStatus('Microphone blocked: '+e.message+' (browsers require HTTPS or localhost)','err'); return; }
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  source=audioCtx.createMediaStreamSource(stream);
+  processor=audioCtx.createScriptProcessor(4096,1,1);
+  chunks=[]; recording=true;
+  processor.onaudioprocess=e=>{
+    if(!recording) return;
+    const inp=e.inputBuffer.getChannelData(0);
+    chunks.push(new Float32Array(inp));
+    let p=0; for(let i=0;i<inp.length;i++) p=Math.max(p,Math.abs(inp[i]));
+    levelEl.style.width=Math.min(100,p*300)+'%';
+  };
+  source.connect(processor); processor.connect(audioCtx.destination);
+  $('mic').classList.add('rec'); $('mic').textContent='Recording - release to send';
+  setStatus('Listening...');
+}
+async function stopRec(){
+  if(!recording) return;
+  recording=false;
+  $('mic').classList.remove('rec'); $('mic').textContent='Hold to talk';
+  levelEl.style.width='0%';
+  processor.disconnect(); source.disconnect();
+  stream.getTracks().forEach(t=>t.stop());
+  const rate=audioCtx.sampleRate; await audioCtx.close();
+  const merged=flatten(chunks);
+  if(!merged.length){ setStatus('Nothing captured.','err'); return; }
+  const peak=merged.reduce((m,v)=>Math.max(m,Math.abs(v)),0);
+  if(peak<0.01){ setStatus('Captured '+merged.length+' samples but peak was '+peak.toFixed(4)+' - the mic is producing silence.','err'); return; }
+  const wav=encodeWav(downsample(merged,rate,TARGET_RATE),TARGET_RATE);
+  setStatus('Sending '+(wav.byteLength/1024).toFixed(0)+' KB (peak '+peak.toFixed(3)+')...');
+  const form=new FormData();
+  form.append('audio',new Blob([wav],{type:'audio/wav'}),'turn.wav');
+  try{ const r=await fetch('/api/voice',{method:'POST',body:form}); render(await r.json()); setStatus(''); }
+  catch(e){ setStatus('Upload failed: '+e.message,'err'); }
+}
+function flatten(bufs){ let n=0; for(const b of bufs) n+=b.length;
+  const o=new Float32Array(n); let k=0; for(const b of bufs){ o.set(b,k); k+=b.length; } return o; }
+function downsample(buf,from,to){
+  if(to>=from) return buf;
+  const ratio=from/to, out=new Float32Array(Math.round(buf.length/ratio));
+  for(let i=0;i<out.length;i++){
+    const s=Math.round(i*ratio), e=Math.min(Math.round((i+1)*ratio),buf.length);
+    let sum=0,c=0; for(let j=s;j<e;j++){ sum+=buf[j]; c++; }
+    out[i]=c?sum/c:0;
+  }
+  return out;
+}
+function encodeWav(samples,rate){
+  const buf=new ArrayBuffer(44+samples.length*2), view=new DataView(buf);
+  const str=(o,s)=>{ for(let i=0;i<s.length;i++) view.setUint8(o+i,s.charCodeAt(i)); };
+  str(0,'RIFF'); view.setUint32(4,36+samples.length*2,true); str(8,'WAVE'); str(12,'fmt ');
+  view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
+  view.setUint32(24,rate,true); view.setUint32(28,rate*2,true);
+  view.setUint16(32,2,true); view.setUint16(34,16,true);
+  str(36,'data'); view.setUint32(40,samples.length*2,true);
+  let o=44;
+  for(let i=0;i<samples.length;i++,o+=2){
+    const s=Math.max(-1,Math.min(1,samples[i]));
+    view.setInt16(o,s<0?s*0x8000:s*0x7fff,true);
+  }
+  return buf;
+}
+const mic=$('mic');
+mic.addEventListener('mousedown',startRec);
+mic.addEventListener('mouseup',stopRec);
+mic.addEventListener('mouseleave',()=>{ if(recording) stopRec(); });
+mic.addEventListener('touchstart',e=>{ e.preventDefault(); startRec(); });
+mic.addEventListener('touchend',e=>{ e.preventDefault(); stopRec(); });
+</script>
+</body>
+</html>
