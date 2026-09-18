@@ -75,3 +75,8 @@ models/
 .DS_Store
 Thumbs.db
  
+data/chroma/
+__pycache__/
+*.pyc
+.env
+.venv/

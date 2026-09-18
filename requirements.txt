@@ -28,3 +28,7 @@ typing_extensions==4.16.0
 fastapi
 uvicorn[standard]
 python-multipart
+chromadb
+pandas
+openpyxl
+sentence-transformers
