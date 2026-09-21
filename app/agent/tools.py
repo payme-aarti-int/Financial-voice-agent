@@ -148,6 +148,46 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "search_rbi_data",
+            "description": (
+                "Search RBI weekly reserve money data (July 2001 to August 2020) "
+                "for context about a period or event. Use for questions like "
+                "'what was happening to currency in circulation in 2016', "
+                "'demonetisation impact on reserve money', or "
+                "'RBI claims on government around 2008'. "
+                "Returns relevant weekly snapshots with all components in crore. "
+                "Accepts an optional year filter to narrow results to a specific year. "
+                "DO NOT use for exact date lookups, superlatives (highest, lowest, "
+                "best, worst), or arithmetic -- those require precise computation "
+                "this tool cannot provide. For those questions, say you cannot "
+                "answer precisely from the available data."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "description": "The question or topic to search for.",
+                    },
+                    "year": {
+                        "type": "integer",
+                        "description": (
+                            "Optional. Narrow results to a specific year "
+                            "(e.g. 2016 for demonetisation). Omit to search all years."
+                        ),
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "description": "Number of results to return. Default 3.",
+                    },
+                },
+                "required": ["question"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_overview",
             "description": (
                 "Find out what data is available: the date range covered and "
@@ -164,13 +204,43 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 class ToolRegistry:
     def __init__(self, repository: FinancialsRepository | None = None):
         self.repository = repository or FinancialsRepository()
+        self._rbi = None
         self._handlers: dict[str, Callable[..., dict]] = {
             "query_financials": self.repository.query,
             "rank_periods": self.repository.rank_periods,
             "compare_periods": self.repository.compare_periods,
             "get_overview": self.repository.get_overview,
+            "search_rbi_data": self._search_rbi,
         }
  
+    def _search_rbi(self, question: str, year: int | None = None, top_k: int = 3) -> dict:
+        """Wrapper so the tool registry can call the query engine uniformly."""
+        try:
+            from app.retrieval.query import RBIQueryEngine
+            if not hasattr(self, '_rbi') or self._rbi is None:
+                self._rbi = None
+            results = self._rbi.search(question, top_k=top_k, year=year)
+            if not results:
+                return {"available": False, "reason": "No matching weeks found."}
+            return {
+                "available": True,
+                "results": [
+                    {
+                        "week_ending": r["metadata"]["week_ending"],
+                        "passage": r["document"],
+                        "distance": round(r["distance"], 3),
+                    }
+                    for r in results
+                ],
+                "note": (
+                    "These are retrieved passages, not exact lookups. "
+                    "Do not state figures as precise facts -- quote the passage "
+                    "and name the week it came from."
+                ),
+            }
+        except Exception as exc:
+            return {"available": False, "error": f"search_rbi_data failed: {exc}"}
+
     @property
     def schemas(self) -> list[dict[str, Any]]:
         return TOOL_SCHEMAS
@@ -183,9 +253,13 @@ class ToolRegistry:
         """
         return (
             f"Monthly profit-and-loss data is available for "
-            f"{self.repository.first_month} through {self.repository.last_month} "
-            f"only. Available metrics: {_METRIC_LIST}. "
-            "There is no balance sheet, cash flow, headcount, or customer data."
+            f"{self.repository.first_month} through {self.repository.last_month}. "
+            f"Available P&L metrics: {_METRIC_LIST}. "
+            "There is no balance sheet, cash flow, headcount, or customer data. "
+            "RBI weekly reserve money data is also available (July 2001 to "
+            "August 2020) via search_rbi_data. Use it for contextual questions "
+            "about currency in circulation, reserve money, and RBI claims. "
+            "It cannot answer superlatives or perform arithmetic."
         )
  
     def execute(self, name: str, raw_arguments: str) -> dict:
