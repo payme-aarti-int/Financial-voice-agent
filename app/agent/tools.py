@@ -204,7 +204,11 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 class ToolRegistry:
     def __init__(self, repository: FinancialsRepository | None = None):
         self.repository = repository or FinancialsRepository()
-        self._rbi = None
+        try:
+            from app.retrieval.query import RBIQueryEngine
+            self._rbi = RBIQueryEngine()
+        except Exception:
+            self._rbi = None  # retrieval unavailable on this machine
         self._handlers: dict[str, Callable[..., dict]] = {
             "query_financials": self.repository.query,
             "rank_periods": self.repository.rank_periods,
@@ -216,9 +220,8 @@ class ToolRegistry:
     def _search_rbi(self, question: str, year: int | None = None, top_k: int = 3) -> dict:
         """Wrapper so the tool registry can call the query engine uniformly."""
         try:
-            from app.retrieval.query import RBIQueryEngine
-            if not hasattr(self, '_rbi') or self._rbi is None:
-                self._rbi = None
+            if self._rbi is None:
+                return {"available": False, "error": "RBI index not available on this machine"}
             results = self._rbi.search(question, top_k=top_k, year=year)
             if not results:
                 return {"available": False, "reason": "No matching weeks found."}
