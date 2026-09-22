@@ -1,14 +1,3 @@
-"""HTTP layer over the existing pipeline.
-
-Adds no logic. Takes a question, hands it to Pipeline, returns what comes back.
-Every guarantee -- the model never produces a figure, tool errors return as
-data, missing periods refuse rather than guess -- lives below this layer.
-
-Audio is the browser's job. The server has no microphone and never will:
-getUserMedia() captures, the page downsamples to 16 kHz mono WAV, and posts the
-bytes here. That sidesteps ALSA, PulseAudio, PipeWire and PortAudio entirely.
-"""
-
 from __future__ import annotations
 
 import io
@@ -123,3 +112,30 @@ async def voice(audio: UploadFile = File(...)):
     payload = _serialise(result)
     payload["peak"] = peak
     return payload
+
+
+class SpeakRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/speak")
+def speak(req: SpeakRequest):
+    from app.orpheus_tts import OrpheusTTS, OrpheusConfig
+    from fastapi.responses import Response
+
+    text = req.text.strip()
+    if not text:
+        return JSONResponse({"error": "empty text"}, status_code=400)
+
+    log.info("speak: %d chars", len(text))
+
+    tts = OrpheusTTS(OrpheusConfig())
+    speech = tts.synthesize(text)
+    tts.close()
+
+    if not speech.ok:
+        log.error("tts failed: %s", speech.error)
+        return JSONResponse({"error": speech.error}, status_code=502)
+
+    log.info("speak: %d bytes in %.0f ms", len(speech.audio), speech.latency_ms or 0)
+    return Response(content=speech.audio, media_type="audio/wav")

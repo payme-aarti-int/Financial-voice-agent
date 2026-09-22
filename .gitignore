@@ -79,4 +79,4 @@ data/chroma/
 __pycache__/
 *.pyc
 .env
-.venv/
+.venv/server.log

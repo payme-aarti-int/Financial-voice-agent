@@ -56,7 +56,7 @@ const statusEl = $('status'), outEl = $('out'), levelEl = $('level');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const card = (l,b) => '<div class="card"><div class="label">'+l+'</div>'+b+'</div>';
 function setStatus(m,c){ statusEl.textContent=m||''; statusEl.className=c||''; }
-function speak(t){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.rate=1.05; speechSynthesis.speak(u);}catch(e){} }
+function speak(t){ if(!t) return; fetch("/api/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t})}).then(r=>r.blob()).then(b=>{const a=new Audio(URL.createObjectURL(b));a.play();}).catch(e=>console.error("tts failed",e)); }
 function render(d){
   if(d.error){ outEl.innerHTML=card('Error','<span class="err">'+esc(d.error)+'</span>'); return; }
   let h='';
