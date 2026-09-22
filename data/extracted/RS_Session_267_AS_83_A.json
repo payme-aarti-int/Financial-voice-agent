@@ -1,0 +1,82 @@
+{
+  "source_file": "RS_Session_267_AS_83_A.csv",
+  "file_type": "csv",
+  "extracted_at": "2026-09-22T09:14:46.100436+00:00",
+  "ocr_used": false,
+  "pages": [],
+  "rows": [
+    {
+      "text": "From RS_Session_267_AS_83_A.csv — Year: 2020, Number of NBFCs: 41.",
+      "metadata": {
+        "source_file": "RS_Session_267_AS_83_A.csv",
+        "file_type": "csv",
+        "row_index": 0,
+        "columns": [
+          "Year",
+          "Number of NBFCs"
+        ],
+        "period": "2020"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AS_83_A.csv — Year: 2021, Number of NBFCs: 16.",
+      "metadata": {
+        "source_file": "RS_Session_267_AS_83_A.csv",
+        "file_type": "csv",
+        "row_index": 1,
+        "columns": [
+          "Year",
+          "Number of NBFCs"
+        ],
+        "period": "2021"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AS_83_A.csv — Year: 2022, Number of NBFCs: 65.",
+      "metadata": {
+        "source_file": "RS_Session_267_AS_83_A.csv",
+        "file_type": "csv",
+        "row_index": 2,
+        "columns": [
+          "Year",
+          "Number of NBFCs"
+        ],
+        "period": "2022"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AS_83_A.csv — Year: 2023, Number of NBFCs: 54.",
+      "metadata": {
+        "source_file": "RS_Session_267_AS_83_A.csv",
+        "file_type": "csv",
+        "row_index": 3,
+        "columns": [
+          "Year",
+          "Number of NBFCs"
+        ],
+        "period": "2023"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AS_83_A.csv — Year: 2024, Number of NBFCs: 28.",
+      "metadata": {
+        "source_file": "RS_Session_267_AS_83_A.csv",
+        "file_type": "csv",
+        "row_index": 4,
+        "columns": [
+          "Year",
+          "Number of NBFCs"
+        ],
+        "period": "2024"
+      }
+    }
+  ],
+  "text": "",
+  "metadata": {
+    "total_rows": 5,
+    "columns": [
+      "Year",
+      "Number of NBFCs"
+    ]
+  }
+}

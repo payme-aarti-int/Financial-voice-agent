@@ -1,0 +1,102 @@
+{
+  "source_file": "RS_Session_267_AU_2782_B.csv",
+  "file_type": "csv",
+  "extracted_at": "2026-09-22T09:15:15.785830+00:00",
+  "ocr_used": false,
+  "pages": [],
+  "rows": [
+    {
+      "text": "From RS_Session_267_AU_2782_B.csv — As on Date: 31-03-2020, Gross NPAs ( In Rs. Crore): 896082, Gross NPAs to Gross Advances (%): 8.21.",
+      "metadata": {
+        "source_file": "RS_Session_267_AU_2782_B.csv",
+        "file_type": "csv",
+        "row_index": 0,
+        "columns": [
+          "As on Date",
+          "Gross NPAs ( In Rs. Crore)",
+          "Gross NPAs to Gross Advances (%)"
+        ],
+        "period": "31-03-2020"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AU_2782_B.csv — As on Date: 31-03-2021, Gross NPAs ( In Rs. Crore): 835051, Gross NPAs to Gross Advances (%): 7.33.",
+      "metadata": {
+        "source_file": "RS_Session_267_AU_2782_B.csv",
+        "file_type": "csv",
+        "row_index": 1,
+        "columns": [
+          "As on Date",
+          "Gross NPAs ( In Rs. Crore)",
+          "Gross NPAs to Gross Advances (%)"
+        ],
+        "period": "31-03-2021"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AU_2782_B.csv — As on Date: 31-03-2022, Gross NPAs ( In Rs. Crore): 742397, Gross NPAs to Gross Advances (%): 5.82.",
+      "metadata": {
+        "source_file": "RS_Session_267_AU_2782_B.csv",
+        "file_type": "csv",
+        "row_index": 2,
+        "columns": [
+          "As on Date",
+          "Gross NPAs ( In Rs. Crore)",
+          "Gross NPAs to Gross Advances (%)"
+        ],
+        "period": "31-03-2022"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AU_2782_B.csv — As on Date: 31-03-2023, Gross NPAs ( In Rs. Crore): 571544, Gross NPAs to Gross Advances (%): 3.87.",
+      "metadata": {
+        "source_file": "RS_Session_267_AU_2782_B.csv",
+        "file_type": "csv",
+        "row_index": 3,
+        "columns": [
+          "As on Date",
+          "Gross NPAs ( In Rs. Crore)",
+          "Gross NPAs to Gross Advances (%)"
+        ],
+        "period": "31-03-2023"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AU_2782_B.csv — As on Date: 31-03-2024, Gross NPAs ( In Rs. Crore): 480701, Gross NPAs to Gross Advances (%): 2.75.",
+      "metadata": {
+        "source_file": "RS_Session_267_AU_2782_B.csv",
+        "file_type": "csv",
+        "row_index": 4,
+        "columns": [
+          "As on Date",
+          "Gross NPAs ( In Rs. Crore)",
+          "Gross NPAs to Gross Advances (%)"
+        ],
+        "period": "31-03-2024"
+      }
+    },
+    {
+      "text": "From RS_Session_267_AU_2782_B.csv — As on Date: 31-12-2024, Gross NPAs ( In Rs. Crore): 455278, Gross NPAs to Gross Advances (%): 2.42.",
+      "metadata": {
+        "source_file": "RS_Session_267_AU_2782_B.csv",
+        "file_type": "csv",
+        "row_index": 5,
+        "columns": [
+          "As on Date",
+          "Gross NPAs ( In Rs. Crore)",
+          "Gross NPAs to Gross Advances (%)"
+        ],
+        "period": "31-12-2024"
+      }
+    }
+  ],
+  "text": "",
+  "metadata": {
+    "total_rows": 6,
+    "columns": [
+      "As on Date",
+      "Gross NPAs ( In Rs. Crore)",
+      "Gross NPAs to Gross Advances (%)"
+    ]
+  }
+}
