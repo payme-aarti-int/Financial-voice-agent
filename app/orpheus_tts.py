@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -98,29 +101,27 @@ class OrpheusTTS:
 
 
 def _self_test(text: str) -> None:
-    import app  # noqa: F401  -- triggers load_dotenv()
+    import app  # noqa: F401  -- triggers load_dotenv() + logging setup
 
     c = OrpheusConfig()
-    print(f"model={c.model}")
-    print(f"voice={c.voice}  format={c.response_format}")
-    print(f"url={c.base_url}{c.path}")
-    print(f"key length={len(c.api_key)}")
-    print()
+    log.info("model=%s", c.model)
+    log.info("voice=%s  format=%s", c.voice, c.response_format)
+    log.info("url=%s%s", c.base_url, c.path)
+    log.info("key length=%d", len(c.api_key))
 
     with OrpheusTTS(c) as tts:
         s = tts.synthesize(text, out_path="audio/output/orpheus_test.wav")
 
     if s.ok:
-        print(f"OK   {len(s.audio):,} bytes in {s.latency_ms:.0f} ms")
-        print(f"     saved {s.wav_path}")
+        log.info("OK   %s bytes in %.0f ms", f"{len(s.audio):,}", s.latency_ms)
+        log.info("     saved %s", s.wav_path)
     else:
-        print(f"FAILED after {s.latency_ms or 0:.0f} ms")
-        print(f"  {s.error}")
-        print()
-        print("  401 -> credentials; check LLM_API_KEY")
-        print("  404 -> wrong model id or path; try TTS_PATH variants")
-        print("  400 -> parameter wrong; body names it (usually TTS_VOICE)")
-        print("  429 -> rate limited")
+        log.error("FAILED after %.0f ms", s.latency_ms or 0)
+        log.error("  %s", s.error)
+        log.error("  401 -> credentials; check LLM_API_KEY")
+        log.error("  404 -> wrong model id or path; try TTS_PATH variants")
+        log.error("  400 -> parameter wrong; body names it (usually TTS_VOICE)")
+        log.error("  429 -> rate limited")
 
 
 if __name__ == "__main__":

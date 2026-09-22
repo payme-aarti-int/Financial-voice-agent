@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 
 from app.retrieval.config import CHROMA_PATH, COLLECTION_NAME, EMBEDDING_MODEL
+
+log = logging.getLogger(__name__)
 
 
 class RBIQueryEngine:
@@ -58,8 +62,10 @@ class RBIQueryEngine:
 
 
 if __name__ == "__main__":
+    import app  # noqa: F401  -- triggers load_dotenv() + logging setup
+
     engine = RBIQueryEngine()
-    print(f"{engine.count()} documents indexed.\n")
+    log.info("%d documents indexed.", engine.count())
     print("Ask a question, or 'exit'. Prefix with a year to filter, e.g.")
     print("  2020 | currency in circulation\n")
 
@@ -79,7 +85,10 @@ if __name__ == "__main__":
                 year = int(left)
 
         for i, r in enumerate(engine.search(question, year=year), start=1):
-            print(f"\n--- {i}  week ending {r['metadata']['week_ending']} "
-                  f"(distance {r['distance']:.3f})")
-            print(r["document"])
-        print()
+            log.info(
+                "--- %d  week ending %s (distance %.3f)\n%s",
+                i,
+                r["metadata"]["week_ending"],
+                r["distance"],
+                r["document"],
+            )

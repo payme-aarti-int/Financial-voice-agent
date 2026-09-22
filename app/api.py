@@ -12,8 +12,7 @@ from pydantic import BaseModel
 
 from app.pipeline import Pipeline
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-log = logging.getLogger("api")
+log = logging.getLogger(__name__)
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -152,4 +151,14 @@ def audio_sample(voice: str):
             {"error": f"sample not generated yet. run the voice generation script first."},
             status_code=404,
         )
+    return FileResponse(path, media_type="audio/wav")
+
+@app.get("/audio/sample/{voice}")
+def audio_sample(voice: str):
+    allowed = {"autumn", "diana", "hannah", "austin", "daniel", "troy"}
+    if voice not in allowed:
+        return JSONResponse({"error": f"unknown voice"}, status_code=400)
+    path = Path(f"audio/output/sample_{voice}.wav")
+    if not path.exists():
+        return JSONResponse({"error": "sample not generated yet"}, status_code=404)
     return FileResponse(path, media_type="audio/wav")

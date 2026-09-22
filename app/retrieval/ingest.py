@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import chromadb
 import pandas as pd
 from sentence_transformers import SentenceTransformer
@@ -13,6 +15,8 @@ from app.retrieval.config import (
     FIRST_DATA_ROW,
     SHEET_NAME,
 )
+
+log = logging.getLogger(__name__)
 
 DATE_COLUMN = "week_ending"
 
@@ -55,11 +59,15 @@ def create_document(row: pd.Series) -> str:
 
 
 def build_index() -> None:
-    print(f"Loading {EXCEL_PATH.name} ...")
+    log.info("Loading %s ...", EXCEL_PATH.name)
     df = load_excel_data()
-    print(f"  {len(df)} weekly rows, "
-          f"{df[DATE_COLUMN].min().date()} to {df[DATE_COLUMN].max().date()}")
-    print(f"  columns: {[c for c in df.columns if c != DATE_COLUMN]}")
+    log.info(
+        "  %d weekly rows, %s to %s",
+        len(df),
+        df[DATE_COLUMN].min().date(),
+        df[DATE_COLUMN].max().date(),
+    )
+    log.info("  columns: %s", [c for c in df.columns if c != DATE_COLUMN])
 
     documents, metadatas, ids = [], [], []
 
@@ -81,7 +89,7 @@ def build_index() -> None:
         )
         ids.append(f"rbi-{date.strftime('%Y-%m-%d')}")
 
-    print(f"Embedding {len(documents)} documents with {EMBEDDING_MODEL} ...")
+    log.info("Embedding %d documents with %s ...", len(documents), EMBEDDING_MODEL)
     model = SentenceTransformer(EMBEDDING_MODEL)
     embeddings = model.encode(
         documents, show_progress_bar=True, normalize_embeddings=True
@@ -97,10 +105,11 @@ def build_index() -> None:
         ids=ids, documents=documents, metadatas=metadatas, embeddings=embeddings
     )
 
-    print(f"\nIndexed {collection.count()} documents at {CHROMA_PATH}")
-    print("\nSample document:")
-    print(documents[0])
+    log.info("Indexed %d documents at %s", collection.count(), CHROMA_PATH)
+    log.info("Sample document:\n%s", documents[0])
 
 
 if __name__ == "__main__":
+    import app  # noqa: F401  -- triggers load_dotenv() + logging setup
+
     build_index()

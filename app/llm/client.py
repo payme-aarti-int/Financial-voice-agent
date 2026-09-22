@@ -1,6 +1,7 @@
 from __future__ import annotations   # MUST be first statement
 
 import json
+import logging
 import os
 import time
 from dataclasses import dataclass, field
@@ -9,6 +10,8 @@ from typing import Any, Iterator
 import httpx
 
 from dotenv import load_dotenv
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,7 +37,7 @@ class Completion:
 class LLMClient:
     def __init__(self, config: LLMConfig | None = None):
         self.config = config or LLMConfig()
-        print(f"LLMClient: model={self.config.model} base_url={self.config.base_url}")
+        log.info("model=%s base_url=%s", self.config.model, self.config.base_url)
         headers = {"Content-Type": "application/json"}
         if self.config.api_key:
             headers["Authorization"] = f"Bearer {self.config.api_key}"
@@ -148,10 +151,11 @@ class LLMClient:
 
 
 if __name__ == "__main__":
+    import app  # noqa: F401  -- triggers load_dotenv() + logging setup
+
     with LLMClient() as client:
-        print(f"model={client.config.model} base_url={client.config.base_url}")
         result, _ = client.stream_measured(
             [{"role": "user", "content": "Say 'pipeline connected' and nothing else."}]
         )
-        print(f'response: "{result.text.strip()}"')
-        print(f"TTFT: {result.ttft_ms:.0f} ms   total: {result.total_ms:.0f} ms")
+        log.info('response: "%s"', result.text.strip())
+        log.info("TTFT: %.0f ms   total: %.0f ms", result.ttft_ms, result.total_ms)

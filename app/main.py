@@ -1,67 +1,75 @@
 from __future__ import annotations
- 
+
 import argparse
+import logging
 from pathlib import Path
- 
+
 from app.pipeline import Pipeline, PipelineResult
- 
- 
+
+log = logging.getLogger(__name__)
+
+
 def load_audio_file(path: str | Path, target_rate: int = 16_000):
-    
+
     import soundfile as sf
- 
+
     audio, rate = sf.read(str(path), dtype="float32")
- 
+
     if audio.ndim > 1:
-        print(f"  note: {audio.shape[1]} channels, averaging to mono")
+        log.info("note: %d channels, averaging to mono", audio.shape[1])
         audio = audio.mean(axis=1)
- 
+
     if rate != target_rate:
-        print(
-            f"  WARNING: file is {rate} Hz, Whisper expects {target_rate} Hz "
-            "-- transcription accuracy will be lower"
+        log.warning(
+            "file is %d Hz, Whisper expects %d Hz -- transcription accuracy "
+            "will be lower",
+            rate,
+            target_rate,
         )
- 
+
     return audio
- 
- 
+
+
 def report(result: PipelineResult) -> None:
     if result.transcript is not None:
-        print(f'  heard: "{result.transcript.text}"')
-        print(
-            f"  lang={result.transcript.language} "
-            f"p={result.transcript.language_probability:.2f}"
+        log.info('heard: "%s"', result.transcript.text)
+        log.info(
+            "lang=%s p=%.2f",
+            result.transcript.language,
+            result.transcript.language_probability,
         )
- 
+
     if result.rejected_reason:
-        print(f"  REJECTED ({result.rejected_reason}) -- asking user to repeat")
- 
+        log.warning("REJECTED (%s) -- asking user to repeat", result.rejected_reason)
+
     for call in result.tool_calls:
         available = call["result"].get("available")
-        print(f"  tool: {call['name']}({call['arguments']}) -> available={available}")
- 
+        log.info(
+            "tool: %s(%s) -> available=%s", call["name"], call["arguments"], available
+        )
+
     if result.agent_turn is not None:
-        print(f'  answer: "{result.agent_turn.answer}"')
+        log.info('answer: "%s"', result.agent_turn.answer)
         if result.agent_turn.hit_iteration_limit:
-            print("  WARNING: hit tool-call iteration limit")
- 
-    print(f'  spoken: "{result.spoken_text}"')
- 
+            log.warning("hit tool-call iteration limit")
+
+    log.info('spoken: "%s"', result.spoken_text)
+
     if result.speech is not None:
         if result.speech.ok:
             state = (
                 "played" if result.speech.played else f"saved {result.speech.wav_path}"
             )
             suffix = f" ({result.speech.error})" if result.speech.error else ""
-            print(f"  tts: {state}{suffix}")
+            log.info("tts: %s%s", state, suffix)
         else:
-            print(f"  tts FAILED: {result.speech.error}")
- 
+            log.error("tts FAILED: %s", result.speech.error)
+
     if result.timing is not None:
         stages = "  ".join(f"{n}={ms:.0f}ms" for n, ms in result.timing.stages.items())
-        print(f"  timing: {stages}  TOTAL={result.timing.total_ms:.0f}ms")
- 
- 
+        log.info("timing: %s  TOTAL=%.0fms", stages, result.timing.total_ms)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Financial Voice Agent")
     parser.add_argument("--ask", type=str, help="Ask one question as text")
@@ -72,22 +80,22 @@ def main() -> None:
     parser.add_argument("--no-play", action="store_true", help="Synthesize, do not play")
     parser.add_argument("--list-devices", action="store_true")
     args = parser.parse_args()
- 
+
     if args.list_devices:
         from app.audio.recorder import Recorder
- 
+
         devices = Recorder.list_devices()
-        print(devices if devices.strip() else "NO AUDIO DEVICES FOUND")
+        log.info("%s", devices if devices.strip() else "NO AUDIO DEVICES FOUND")
         return
- 
+
     autoplay = not args.no_play
- 
+
     with Pipeline() as pipeline:
         if args.ask:
-            print(f"\nQ: {args.ask}")
+            log.info("Q: %s", args.ask)
             report(pipeline.run_text(args.ask, autoplay=autoplay))
             return
- 
+
         if args.chat:
             print("Type a question, or 'quit' to exit.\n")
             while True:
@@ -102,31 +110,30 @@ def main() -> None:
                     continue
                 report(pipeline.run_text(question, autoplay=autoplay))
                 print()
-            print(pipeline.telemetry.report_summary())
+            log.info("%s", pipeline.telemetry.report_summary())
             return
- 
+
         if args.audio_file:
-            print(f"\nFile: {args.audio_file}")
+            log.info("File: %s", args.audio_file)
             audio = load_audio_file(args.audio_file)
             report(pipeline.run_audio(audio, autoplay=autoplay))
             return
- 
+
         if args.turns:
             from app.audio.recorder import Recorder, peak_level
- 
+
             recorder = Recorder()
             for i in range(1, args.turns + 1):
-                print(f"\n--- turn {i}/{args.turns} --- speak now ({args.duration:.0f}s)")
+                log.info("--- turn %d/%d --- speak now (%.0fs)", i, args.turns, args.duration)
                 audio = recorder.record(args.duration)
                 if peak_level(audio) < 0.01:
-                    print("  WARNING: near-silent capture -- mic recorded nothing?")
+                    log.warning("near-silent capture -- mic recorded nothing?")
                 report(pipeline.run_audio(audio, autoplay=autoplay))
-            print(pipeline.telemetry.report_summary())
+            log.info("%s", pipeline.telemetry.report_summary())
             return
- 
+
         parser.print_help()
- 
- 
+
+
 if __name__ == "__main__":
     main()
- 
