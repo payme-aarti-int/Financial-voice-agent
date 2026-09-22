@@ -1,0 +1,1288 @@
+{
+  "nodes": [
+    {
+      "id": "CONTENTS",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "VI.2  Resolution ..............................................................................................................................................67"
+      }
+    },
+    {
+      "id": "PREFACE",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Chapter I",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Legislative Framework",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Chapter II",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Licensing of new institutions",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": ""
+      }
+    },
+    {
+      "id": "II.3  Branch Licensing .....................................................................................................................................5",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "Branch Licensing",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "II.3  Branch Licensing .....................................................................................................................................5"
+      }
+    },
+    {
+      "id": "Governance and Ownership Framework",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "II.3  Branch Licensing .....................................................................................................................................5"
+      }
+    },
+    {
+      "id": "Chapter III",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "II.3  Branch Licensing .....................................................................................................................................5"
+      }
+    },
+    {
+      "id": "III.3  Ownership Guidelines ............................................................................................................................8",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "Ownership Guidelines",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "III.3  Ownership Guidelines ............................................................................................................................8"
+      }
+    },
+    {
+      "id": "Prudential Norms and Capital Regulations",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "III.3  Ownership Guidelines ............................................................................................................................8"
+      }
+    },
+    {
+      "id": "Section III.3",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "III.3  Ownership Guidelines ............................................................................................................................8"
+      }
+    },
+    {
+      "id": "Chapter IV",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "III.3  Ownership Guidelines ............................................................................................................................8"
+      }
+    },
+    {
+      "id": "IV.7  Leverage Ratio requirements applicable to REs ...................................................................................38",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "Leverage Ratio",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.7  Leverage Ratio requirements applicable to REs ...................................................................................38"
+      }
+    },
+    {
+      "id": "REs",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.7  Leverage Ratio requirements applicable to REs ...................................................................................38"
+      }
+    },
+    {
+      "id": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "Green Deposits",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53"
+      }
+    },
+    {
+      "id": "Framework for acceptance of Green Deposits",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53"
+      }
+    },
+    {
+      "id": "Conduct related regulations",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53"
+      }
+    },
+    {
+      "id": "Chapter V",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53"
+      }
+    },
+    {
+      "id": "IV.13",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53"
+      }
+    },
+    {
+      "id": "Contents",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53"
+      }
+    },
+    {
+      "id": "V.6  Key elements of KYC Policy ...................................................................................................................63",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "Chapter VI",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "V.6  Key elements of KYC Policy ...................................................................................................................63"
+      }
+    },
+    {
+      "id": "Regulated Entities",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "V.6  Key elements of KYC Policy ...................................................................................................................63"
+      }
+    },
+    {
+      "id": "VI.2  Resolution ..............................................................................................................................................67",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "VI.2",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "VI.2  Resolution ..............................................................................................................................................67"
+      }
+    },
+    {
+      "id": "Resolution",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "VI.2  Resolution ..............................................................................................................................................67"
+      }
+    },
+    {
+      "id": "67",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "VI.2  Resolution ..............................................................................................................................................67"
+      }
+    },
+    {
+      "id": "iv",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "CONTENTS",
+        "h2": "VI.2  Resolution ..............................................................................................................................................67"
+      }
+    },
+    {
+      "id": "Department of Regulation (DoR)",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Reserve Bank of India (RBI)",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Commercial Banks",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Cooperative Banks",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Non-Banking Financial Companies (NBFCs)",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Asset Reconstruction Companies",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "All India Financial Institutions",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Credit Information Companies",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Prudential Regulation Division",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Conduct and Operations Division",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "Regulations Review Authority 2.0 (RRA 2.0)",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf",
+        "h1": "PREFACE",
+        "h2": ""
+      }
+    },
+    {
+      "id": "regulatory developments",
+      "attrs": {
+        "type": "concept",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "CHAPTER I - LEGISLATIVE FRAMEWORK",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "CHAPTER II - LICENSING OF NEW INSTITUTIONS",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "II.1 LICENSING OF BANKS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "II.3 BRANCH LICENSING",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "CHAPTER III - GOVERNANCE AND OWNERSHIP FRAMEWORK",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "III.1 GOVERNANCE FRAMEWORK",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "III.2 SCALE-BASED GOVERNANCE FRAMEWORK FOR NBFC",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.1 CAPITAL REGULATIONS PRESCRIBED BY BCBS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.3.a Credit Products",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.3.d Resolution of Stressed Assets",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.3.e Credit Risk Transfer and Distribution",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.3.f Concentration Risk Management",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.4 OPERATIONAL RISK FOR BANKS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.5 OPERATIONAL RISK FOR NBFCs: KEY PRINCIPLES",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.6.a Roles and responsibilities of the Board and Senior Management",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.6.b Other important considerations",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.6.c Monitoring, Control and Audit",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.8.a Banks and All-India Financial Institutions (AIFIs)",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.8.c Risk weight related regulations covering all forms of risk",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.9 STATUTORY AND REGULATORY LIMITS ON DEPOSITS FOR DEPOSIT TAKING NBFCs (INCLUDING HFCs)",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.10.b Payout Ratios for Commercial Banks (excluding RRBs)",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.10.c Payout Ratio for NBFCs",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "IV.13 OVERVIEW OF THE FRAMEWORK FOR ACCEPTANCE OF GREEN DEPOSITS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.1.a Pricing and Charges",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.1.b Deposit related pricing aspects- NBFCs",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.2 INTEREST RATE FRAMEWORK AND PRICING OF DEPOSITS FOR SCBs AND COOPERATIVE BANKS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.2.b Present Limit on Bulk deposits",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.2.c Interest rates and Charges on Deposits",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.3 FOREIGN CURRENCY DEPOSITS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.4.a Pre-sanction appraisal",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.4.b Disbursement and Post-disbursement supervision",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.4.c Other Instructions",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.5 RECENT INSTRUCTIONS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "V.6 KEY ELEMENTS OF KYC POLICY",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "CHAPTER VI - RESOLUTION OF REGULATED ENTITIES",
+      "attrs": {
+        "type": "chapter",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "VI.1 MERGERS AND AMALGAMATIONS",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    },
+    {
+      "id": "VI.2 RESOLUTION",
+      "attrs": {
+        "type": "section",
+        "source": "data.pdf"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "CONTENTS",
+      "to": "PREFACE",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "Chapter I",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "Legislative Framework",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "Chapter II",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "Licensing of new institutions",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "II.3  Branch Licensing .....................................................................................................................................5",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "III.3  Ownership Guidelines ............................................................................................................................8",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "IV.7  Leverage Ratio requirements applicable to REs ...................................................................................38",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "V.6  Key elements of KYC Policy ...................................................................................................................63",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "VI.2  Resolution ..............................................................................................................................................67",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CONTENTS",
+      "to": "VI.2",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Department of Regulation (DoR)",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Reserve Bank of India (RBI)",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Commercial Banks",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Cooperative Banks",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Non-Banking Financial Companies (NBFCs)",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Asset Reconstruction Companies",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "All India Financial Institutions",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Credit Information Companies",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Prudential Regulation Division",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Conduct and Operations Division",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "PREFACE",
+      "to": "Regulations Review Authority 2.0 (RRA 2.0)",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Chapter I",
+      "to": "Legislative Framework",
+      "relation": "covers",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Chapter II",
+      "to": "Licensing of new institutions",
+      "relation": "covers",
+      "source": "data.pdf"
+    },
+    {
+      "from": "II.3  Branch Licensing .....................................................................................................................................5",
+      "to": "Branch Licensing",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "II.3  Branch Licensing .....................................................................................................................................5",
+      "to": "Governance and Ownership Framework",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "II.3  Branch Licensing .....................................................................................................................................5",
+      "to": "Chapter III",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Branch Licensing",
+      "to": "Chapter III",
+      "relation": "part_of",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Governance and Ownership Framework",
+      "to": "Chapter III",
+      "relation": "part_of",
+      "source": "data.pdf"
+    },
+    {
+      "from": "III.3  Ownership Guidelines ............................................................................................................................8",
+      "to": "Ownership Guidelines",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "III.3  Ownership Guidelines ............................................................................................................................8",
+      "to": "Prudential Norms and Capital Regulations",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "III.3  Ownership Guidelines ............................................................................................................................8",
+      "to": "Section III.3",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "III.3  Ownership Guidelines ............................................................................................................................8",
+      "to": "Chapter IV",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Ownership Guidelines",
+      "to": "Section III.3",
+      "relation": "part_of",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Prudential Norms and Capital Regulations",
+      "to": "Chapter IV",
+      "relation": "part_of",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.7  Leverage Ratio requirements applicable to REs ...................................................................................38",
+      "to": "Leverage Ratio",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.7  Leverage Ratio requirements applicable to REs ...................................................................................38",
+      "to": "REs",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Leverage Ratio",
+      "to": "REs",
+      "relation": "applicable_to",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "to": "Green Deposits",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "to": "Framework for acceptance of Green Deposits",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "to": "Conduct related regulations",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "to": "Chapter V",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "to": "IV.13",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13 Overview of the Framework for acceptance of Green Deposits .........................................................53",
+      "to": "Contents",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Green Deposits",
+      "to": "Framework for acceptance of Green Deposits",
+      "relation": "is_part_of",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Chapter V",
+      "to": "Conduct related regulations",
+      "relation": "covers",
+      "source": "data.pdf"
+    },
+    {
+      "from": "IV.13",
+      "to": "Contents",
+      "relation": "section_of",
+      "source": "data.pdf"
+    },
+    {
+      "from": "V.6  Key elements of KYC Policy ...................................................................................................................63",
+      "to": "Chapter VI",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "V.6  Key elements of KYC Policy ...................................................................................................................63",
+      "to": "Regulated Entities",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Chapter VI",
+      "to": "Regulated Entities",
+      "relation": "covers",
+      "source": "data.pdf"
+    },
+    {
+      "from": "VI.2  Resolution ..............................................................................................................................................67",
+      "to": "CONTENTS",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "VI.2  Resolution ..............................................................................................................................................67",
+      "to": "VI.2",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "VI.2  Resolution ..............................................................................................................................................67",
+      "to": "Resolution",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "VI.2  Resolution ..............................................................................................................................................67",
+      "to": "67",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "VI.2  Resolution ..............................................................................................................................................67",
+      "to": "iv",
+      "relation": "mentions",
+      "source": "data.pdf"
+    },
+    {
+      "from": "VI.2",
+      "to": "Resolution",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Resolution",
+      "to": "67",
+      "relation": "on_page",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Resolution",
+      "to": "iv",
+      "relation": "has_text",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Reserve Bank of India (RBI)",
+      "relation": "regulated_by",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Commercial Banks",
+      "relation": "oversees",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Cooperative Banks",
+      "relation": "oversees",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Non-Banking Financial Companies (NBFCs)",
+      "relation": "oversees",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Asset Reconstruction Companies",
+      "relation": "oversees",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "All India Financial Institutions",
+      "relation": "oversees",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Credit Information Companies",
+      "relation": "oversees",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Prudential Regulation Division",
+      "relation": "has_division",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Department of Regulation (DoR)",
+      "to": "Conduct and Operations Division",
+      "relation": "has_division",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Reserve Bank of India (RBI)",
+      "to": "Regulations Review Authority 2.0 (RRA 2.0)",
+      "relation": "constituted",
+      "source": "data.pdf"
+    },
+    {
+      "from": "Regulations Review Authority 2.0 (RRA 2.0)",
+      "to": "regulatory developments",
+      "relation": "reviews",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER II - LICENSING OF NEW INSTITUTIONS",
+      "to": "II.1 LICENSING OF BANKS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER II - LICENSING OF NEW INSTITUTIONS",
+      "to": "II.3 BRANCH LICENSING",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER III - GOVERNANCE AND OWNERSHIP FRAMEWORK",
+      "to": "III.1 GOVERNANCE FRAMEWORK",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER III - GOVERNANCE AND OWNERSHIP FRAMEWORK",
+      "to": "III.2 SCALE-BASED GOVERNANCE FRAMEWORK FOR NBFC",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.1 CAPITAL REGULATIONS PRESCRIBED BY BCBS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.3.a Credit Products",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.3.d Resolution of Stressed Assets",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.3.e Credit Risk Transfer and Distribution",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.3.f Concentration Risk Management",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.4 OPERATIONAL RISK FOR BANKS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.5 OPERATIONAL RISK FOR NBFCs: KEY PRINCIPLES",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.6.a Roles and responsibilities of the Board and Senior Management",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.6.b Other important considerations",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.6.c Monitoring, Control and Audit",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.8.a Banks and All-India Financial Institutions (AIFIs)",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.8.c Risk weight related regulations covering all forms of risk",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.9 STATUTORY AND REGULATORY LIMITS ON DEPOSITS FOR DEPOSIT TAKING NBFCs (INCLUDING HFCs)",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.10.b Payout Ratios for Commercial Banks (excluding RRBs)",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.10.c Payout Ratio for NBFCs",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER IV -PRUDENTIAL NORMS AND CAPITAL REGULATIONS",
+      "to": "IV.13 OVERVIEW OF THE FRAMEWORK FOR ACCEPTANCE OF GREEN DEPOSITS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.1.a Pricing and Charges",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.1.b Deposit related pricing aspects- NBFCs",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.2 INTEREST RATE FRAMEWORK AND PRICING OF DEPOSITS FOR SCBs AND COOPERATIVE BANKS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.2.b Present Limit on Bulk deposits",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.2.c Interest rates and Charges on Deposits",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.3 FOREIGN CURRENCY DEPOSITS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.4.a Pre-sanction appraisal",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.4.b Disbursement and Post-disbursement supervision",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.4.c Other Instructions",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.5 RECENT INSTRUCTIONS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER V - CONDUCT RELATED REGULATIONS",
+      "to": "V.6 KEY ELEMENTS OF KYC POLICY",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER VI - RESOLUTION OF REGULATED ENTITIES",
+      "to": "VI.1 MERGERS AND AMALGAMATIONS",
+      "relation": "contains",
+      "source": "data.pdf"
+    },
+    {
+      "from": "CHAPTER VI - RESOLUTION OF REGULATED ENTITIES",
+      "to": "VI.2 RESOLUTION",
+      "relation": "contains",
+      "source": "data.pdf"
+    }
+  ]
+}
