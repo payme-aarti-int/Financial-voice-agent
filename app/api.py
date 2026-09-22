@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel
 
 from app.pipeline import Pipeline
@@ -120,15 +120,13 @@ class SpeakRequest(BaseModel):
 
 @app.post("/api/speak")
 def speak(req: SpeakRequest):
-    from app.orpheus_tts import OrpheusTTS, OrpheusConfig
-    from fastapi.responses import Response
-
     text = req.text.strip()
     if not text:
         return JSONResponse({"error": "empty text"}, status_code=400)
 
     log.info("speak: %d chars", len(text))
 
+    from app.orpheus_tts import OrpheusTTS, OrpheusConfig
     tts = OrpheusTTS(OrpheusConfig())
     speech = tts.synthesize(text)
     tts.close()
@@ -139,3 +137,19 @@ def speak(req: SpeakRequest):
 
     log.info("speak: %d bytes in %.0f ms", len(speech.audio), speech.latency_ms or 0)
     return Response(content=speech.audio, media_type="audio/wav")
+
+
+@app.get("/audio/sample/{voice}")
+def audio_sample(voice: str):
+    """Serve pre-generated voice samples for comparison."""
+    allowed = {"autumn", "diana", "hannah", "austin", "daniel", "troy"}
+    if voice not in allowed:
+        return JSONResponse({"error": f"unknown voice. choose from {allowed}"}, status_code=400)
+
+    path = Path(f"audio/output/sample_{voice}.wav")
+    if not path.exists():
+        return JSONResponse(
+            {"error": f"sample not generated yet. run the voice generation script first."},
+            status_code=404,
+        )
+    return FileResponse(path, media_type="audio/wav")
