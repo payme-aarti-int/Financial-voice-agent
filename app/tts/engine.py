@@ -71,16 +71,23 @@ class EspeakTTS:
  
  
 def play(wav_path: str | Path) -> tuple[bool, str | None]:
-    
+
     try:
         import sounddevice as sd
+
+        from app.audio.recorder import TIMEOUT_SLACK_S, wait_with_timeout
     except Exception as exc:  # noqa: BLE001 - OSError when PortAudio is absent
         return False, f"audio output unavailable: {exc}"
- 
+
     try:
         audio, sample_rate = sf.read(str(wav_path), dtype="float32")
+        duration_s = len(audio) / sample_rate
         sd.play(np.squeeze(audio), sample_rate, device=AUDIO.device)
-        sd.wait()
+        if not wait_with_timeout(duration_s + TIMEOUT_SLACK_S):
+            return False, (
+                f"playback did not finish within {duration_s + TIMEOUT_SLACK_S:.0f}s "
+                "-- the audio output device may be unresponsive or disconnected"
+            )
         return True, None
     except Exception as exc:  # noqa: BLE001
         return False, f"playback failed: {exc}"

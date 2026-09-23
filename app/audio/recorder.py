@@ -5,6 +5,7 @@ STILL BATCH -- deliberate. This is the baseline we measure, not what we ship.
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +13,60 @@ import sounddevice as sd
 import soundfile as sf
 
 from app.config import AUDIO
+
+# Slack added on top of the requested duration before we give up on a stream
+# and call it dead. A flaky device (e.g. a USB headset dropping out) can leave
+# sd.wait() blocked forever with no exception -- worse than a crash, since
+# nothing tells the caller anything is wrong.
+TIMEOUT_SLACK_S = 5.0
+
+
+def wait_with_timeout(timeout_s: float) -> bool:
+    """sd.wait(), but give up after `timeout_s` instead of blocking forever.
+
+    Returns True if the stream finished on its own, False if we timed out and
+    called sd.stop() to abort it.
+    """
+    done = threading.Event()
+
+    def _waiter() -> None:
+        sd.wait()
+        done.set()
+
+    thread = threading.Thread(target=_waiter, daemon=True)
+    thread.start()
+    if done.wait(timeout_s):
+        return True
+    sd.stop()
+    return False
+
+
+_UNSET = object()
+
+
+def call_with_timeout(func, timeout_s: float):
+    """Run a PortAudio call that can block forever (e.g. query_devices() on a
+    flaky device) off-thread, so a dead device gives us a clear error instead
+    of hanging the caller. The stuck call itself keeps running in a daemon
+    thread -- there's no way to cancel it -- but the caller gets control back.
+    """
+    result = [_UNSET]
+    error = [None]
+
+    def _runner() -> None:
+        try:
+            result[0] = func()
+        except Exception as exc:  # noqa: BLE001
+            error[0] = exc
+
+    thread = threading.Thread(target=_runner, daemon=True)
+    thread.start()
+    thread.join(timeout_s)
+    if thread.is_alive():
+        raise TimeoutError(f"did not respond within {timeout_s:.0f}s")
+    if error[0] is not None:
+        raise error[0]
+    return result[0]
 
 
 class Recorder:
@@ -33,7 +88,11 @@ class Recorder:
             dtype=AUDIO.dtype,
             device=AUDIO.device,
         )
-        sd.wait()
+        if not wait_with_timeout(duration + TIMEOUT_SLACK_S):
+            raise RuntimeError(
+                f"recording did not finish within {duration + TIMEOUT_SLACK_S:.0f}s "
+                "-- the audio input device may be unresponsive or disconnected"
+            )
         # sounddevice returns (n, 1) for mono; Whisper wants (n,). Passing the
         # 2-D array does not raise -- it silently misbehaves. Normalise here.
         return np.squeeze(audio)
@@ -47,7 +106,13 @@ class Recorder:
 
     @staticmethod
     def list_devices() -> str:
-        return str(sd.query_devices())
+        try:
+            devices = call_with_timeout(sd.query_devices, timeout_s=8.0)
+        except TimeoutError:
+            return "device enumeration timed out -- an audio device may be stuck"
+        except Exception as exc:  # noqa: BLE001
+            return f"device enumeration failed: {exc}"
+        return str(devices)
 
 
 def peak_level(audio: np.ndarray) -> float:

@@ -13,6 +13,9 @@ def load_audio_file(path: str | Path, target_rate: int = 16_000):
 
     import soundfile as sf
 
+    if not Path(path).exists():
+        raise FileNotFoundError(f"audio file not found: {path}")
+
     audio, rate = sf.read(str(path), dtype="float32")
 
     if audio.ndim > 1:
@@ -115,7 +118,11 @@ def main() -> None:
 
         if args.audio_file:
             log.info("File: %s", args.audio_file)
-            audio = load_audio_file(args.audio_file)
+            try:
+                audio = load_audio_file(args.audio_file)
+            except FileNotFoundError as exc:
+                log.error("%s", exc)
+                return
             report(pipeline.run_audio(audio, autoplay=autoplay))
             return
 
@@ -125,7 +132,11 @@ def main() -> None:
             recorder = Recorder()
             for i in range(1, args.turns + 1):
                 log.info("--- turn %d/%d --- speak now (%.0fs)", i, args.turns, args.duration)
-                audio = recorder.record(args.duration)
+                try:
+                    audio = recorder.record(args.duration)
+                except Exception as exc:
+                    log.error("recording failed: %s -- skipping this turn", exc)
+                    continue
                 if peak_level(audio) < 0.01:
                     log.warning("near-silent capture -- mic recorded nothing?")
                 report(pipeline.run_audio(audio, autoplay=autoplay))
