@@ -12,6 +12,12 @@ class AudioConfig:
     channels: int = 1           # Mono.
     dtype: str = "float32"      # What faster-whisper wants; avoids a conversion.
 
+    # None lets PortAudio pick its own default. On some Linux setups that
+    # default routes through a dmix/PipeWire ALSA plugin that never signals
+    # completion, so sd.wait() blocks forever with no error. Set AUDIO_DEVICE
+    # (e.g. "sysdefault") to point at a device that actually completes.
+    device: str | None = os.getenv("AUDIO_DEVICE") or None
+
 
 @dataclass(frozen=True)
 class STTConfig:

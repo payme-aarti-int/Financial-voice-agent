@@ -31,6 +31,7 @@ class Recorder:
             samplerate=self.sample_rate,
             channels=self.channels,
             dtype=AUDIO.dtype,
+            device=AUDIO.device,
         )
         sd.wait()
         # sounddevice returns (n, 1) for mono; Whisper wants (n,). Passing the

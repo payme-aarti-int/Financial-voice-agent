@@ -7,6 +7,8 @@ from pathlib import Path
  
 import numpy as np
 import soundfile as sf
+
+from app.config import AUDIO
  
  
 @dataclass
@@ -77,7 +79,7 @@ def play(wav_path: str | Path) -> tuple[bool, str | None]:
  
     try:
         audio, sample_rate = sf.read(str(wav_path), dtype="float32")
-        sd.play(np.squeeze(audio), sample_rate)
+        sd.play(np.squeeze(audio), sample_rate, device=AUDIO.device)
         sd.wait()
         return True, None
     except Exception as exc:  # noqa: BLE001
