@@ -132,6 +132,11 @@ def run(category: str | None, verbose: bool, threshold: float) -> int:
     observability.start_eval_run(category, threshold)
     with Pipeline() as pipeline:
         for index, case in enumerate(cases, 1):
+            # Each case is an independent scenario -- the agent keeps
+            # conversation history for real usage, but cases must not
+            # leak context into each other.
+            pipeline.agent.reset_history()
+
             result = CaseResult(
                 case_id=case["id"],
                 category=case.get("category", "uncategorised"),

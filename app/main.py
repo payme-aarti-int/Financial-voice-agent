@@ -152,12 +152,18 @@ def main() -> None:
             return
 
         if args.listen:
+            from collections import deque
+
             from app.audio.listener import AutoListener
 
             log.info(
                 "Listening -- just speak, no button needed. "
-                "You can talk over a reply to interrupt it. Ctrl+C to stop."
+                "You can talk over a reply to interrupt it -- I'll still answer "
+                "it once things settle. Ctrl+C to stop."
             )
+            # Answers cut off by an interruption, queued to be spoken once the
+            # conversation settles down -- nothing you asked gets dropped.
+            pending: deque[tuple[str, str]] = deque(maxlen=3)
             try:
                 with AutoListener() as listener:
                     while True:
@@ -169,8 +175,31 @@ def main() -> None:
                             interrupt=lambda: listener.is_speech_active,
                         )
                         report(result)
-                        if result.speech is not None and result.speech.interrupted:
-                            log.info("--- interrupted -- listening for what you said ---")
+
+                        if (
+                            result.speech is not None
+                            and result.speech.interrupted
+                            and result.agent_turn is not None
+                        ):
+                            pending.append((result.agent_turn.question, result.agent_turn.answer))
+                            log.info(
+                                "--- interrupted -- I'll come back to that. "
+                                "Listening for what you said ---"
+                            )
+                            continue
+
+                        if pending:
+                            question, answer = pending.popleft()
+                            log.info('--- also answering your earlier question: "%s" ---', question)
+                            followup = f"Also, about what you asked before -- {answer}"
+                            speech = pipeline.tts.speak(
+                                followup,
+                                autoplay=autoplay,
+                                interrupt=lambda: listener.is_speech_active,
+                            )
+                            if speech.interrupted:
+                                pending.appendleft((question, answer))
+                                log.info("--- interrupted again -- keeping that one queued ---")
             except KeyboardInterrupt:
                 print()
             except Exception as exc:
