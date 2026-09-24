@@ -195,7 +195,13 @@ class TTSService:
         """
         speech = self.engine.synthesize(text, self.output_dir / filename)
         if not speech.ok and self.engine is not self.fallback_engine:
-            log.warning("primary TTS failed (%s), falling back to espeak", speech.error)
+            # "rate limited" means the engine itself already logged this
+            # once and is deliberately short-circuiting -- not a new
+            # failure, so don't re-warn on every single turn during the
+            # cooldown.
+            error = speech.error or ""
+            log_fn = log.info if error.startswith("rate limited") else log.warning
+            log_fn("primary TTS failed (%s), falling back to espeak", speech.error)
             speech = self.fallback_engine.synthesize(text, self.output_dir / filename)
         if not speech.ok or not autoplay:
             return speech
