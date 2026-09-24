@@ -21,7 +21,7 @@ class AudioConfig:
 
 @dataclass(frozen=True)
 class STTConfig:
-    model_size: str = os.getenv("STT_MODEL_SIZE", "base.en")
+    model_size: str = os.getenv("STT_MODEL_SIZE", "large-v3-turbo")
     device: str = os.getenv("STT_DEVICE", "cpu")
     compute_type: str = os.getenv("STT_COMPUTE_TYPE", "int8")
 
@@ -32,6 +32,17 @@ class STTConfig:
     # beam_size=1 is greedy decoding. Beam search buys ~1 point of WER for a
     # large latency cost -- wrong trade for real-time.
     beam_size: int = 1
+
+    # VAD (Silero, bundled with faster-whisper) drops non-speech before
+    # decoding: less silence/noise for Whisper to hallucinate a transcript
+    # from, and less audio to decode in the first place.
+    vad_filter: bool = os.getenv("STT_VAD_FILTER", "true").lower() not in ("false", "0", "")
+
+    # The library default (2000ms) waits a long time before deciding speech
+    # has ended -- fine for transcribing a file, too slow for a turn-taking
+    # voice agent. Shorter cuts latency at the cost of trimming pauses mid-
+    # sentence more aggressively.
+    vad_min_silence_ms: int = int(os.getenv("STT_VAD_MIN_SILENCE_MS", "500"))
 
 
 AUDIO = AudioConfig()

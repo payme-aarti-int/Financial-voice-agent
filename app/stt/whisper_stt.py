@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 from faster_whisper import WhisperModel
+from faster_whisper.vad import VadOptions
 
 from app.config import STT
 
@@ -67,6 +68,8 @@ class WhisperSTT:
             source,
             language=STT.language,
             beam_size=STT.beam_size,
+            vad_filter=STT.vad_filter,
+            vad_parameters=VadOptions(min_silence_duration_ms=STT.vad_min_silence_ms),
         )
 
         # transcribe() returns a GENERATOR: nothing computes until consumed.
