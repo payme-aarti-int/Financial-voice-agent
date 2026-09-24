@@ -45,5 +45,33 @@ class STTConfig:
     vad_min_silence_ms: int = int(os.getenv("STT_VAD_MIN_SILENCE_MS", "500"))
 
 
+@dataclass(frozen=True)
+class ListenConfig:
+    """Hands-free mic listening: VAD decides when an utterance starts and
+    ends, so there is no button to press and no --duration to guess.
+    """
+
+    # Audio kept from before speech is detected, so the first word isn't
+    # clipped while the VAD is still confirming onset.
+    pre_roll_s: float = float(os.getenv("LISTEN_PRE_ROLL_S", "0.5"))
+
+    # How much trailing audio the VAD looks at each time it re-checks
+    # whether the speaker is still talking.
+    check_window_s: float = float(os.getenv("LISTEN_CHECK_WINDOW_S", "1.0"))
+
+    # Trailing silence required before an utterance is considered finished.
+    min_silence_s: float = float(os.getenv("LISTEN_MIN_SILENCE_S", "0.6"))
+
+    # Utterances shorter than this are discarded as noise, not sent to STT.
+    min_utterance_s: float = float(os.getenv("LISTEN_MIN_UTTERANCE_S", "0.3"))
+
+    # Hard cap so a VAD miss can't record forever.
+    max_utterance_s: float = float(os.getenv("LISTEN_MAX_UTTERANCE_S", "30"))
+
+    # Mic is read in chunks this long; also the callback's latency floor.
+    chunk_s: float = float(os.getenv("LISTEN_CHUNK_S", "0.1"))
+
+
 AUDIO = AudioConfig()
 STT = STTConfig()
+LISTEN = ListenConfig()

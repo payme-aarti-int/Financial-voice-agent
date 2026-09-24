@@ -7,7 +7,7 @@ import numpy as np
 
 from app import observability
 from app.agent.loop import AgentTurn, FinancialAgent
-from app.stt.whisper_stt import Transcript, WhisperSTT, GroqSTT
+from app.stt.whisper_stt import GroqSTT, Transcript
 from app.telemetry import Telemetry, Turn
 from app.tts.engine import Speech, TTSService
 from app.tts.speakable import to_speakable

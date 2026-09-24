@@ -80,6 +80,11 @@ def main() -> None:
     parser.add_argument("--audio-file", type=str, help="Answer from an audio file")
     parser.add_argument("--turns", type=int, default=0, help="Live mic turns")
     parser.add_argument("--duration", type=float, default=5.0)
+    parser.add_argument(
+        "--listen",
+        action="store_true",
+        help="Hands-free: VAD detects speech start/end automatically, no --duration needed",
+    )
     parser.add_argument("--no-play", action="store_true", help="Synthesize, do not play")
     parser.add_argument("--list-devices", action="store_true")
     args = parser.parse_args()
@@ -140,6 +145,22 @@ def main() -> None:
                 if peak_level(audio) < 0.01:
                     log.warning("near-silent capture -- mic recorded nothing?")
                 report(pipeline.run_audio(audio, autoplay=autoplay))
+            log.info("%s", pipeline.telemetry.report_summary())
+            return
+
+        if args.listen:
+            from app.audio.listener import AutoListener
+
+            log.info("Listening -- just speak, no button needed. Ctrl+C to stop.")
+            listener = AutoListener()
+            try:
+                for audio in listener.utterances():
+                    log.info("--- speech detected, processing turn ---")
+                    report(pipeline.run_audio(audio, autoplay=autoplay))
+            except KeyboardInterrupt:
+                print()
+            except Exception as exc:
+                log.error("listening stopped: %s", exc)
             log.info("%s", pipeline.telemetry.report_summary())
             return
 
