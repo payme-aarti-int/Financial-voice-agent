@@ -83,3 +83,7 @@ __pycache__/
 data/extracted/
 logs/
 data/knowledge_graph*.png
+
+mlruns/
+mlflow.db
+mlartifacts/

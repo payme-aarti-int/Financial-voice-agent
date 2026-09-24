@@ -91,6 +91,25 @@ def test_summary_with_no_turns():
     assert Telemetry().report_summary() == "No turns recorded."
 
 
+def test_summary_metrics_matches_report_summary():
+    t = Telemetry()
+    for stage_ms in (100.0, 150.0, 200.0):
+        t.begin_turn()
+        t.record("agent", stage_ms)
+        t.end_turn()
+
+    metrics = t.summary_metrics()
+    assert metrics["agent_p50_ms"] == 150.0
+    assert metrics["agent_p95_ms"] == 200.0
+    assert metrics["agent_max_ms"] == 200.0
+    assert metrics["total_p50_ms"] == 150.0
+    assert metrics["total_max_ms"] == 200.0
+
+
+def test_summary_metrics_empty_without_turns():
+    assert Telemetry().summary_metrics() == {}
+
+
 @pytest.mark.parametrize(
     "values,pct,expected",
     [

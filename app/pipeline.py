@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
+from app import observability
 from app.agent.loop import AgentTurn, FinancialAgent
 from app.stt.whisper_stt import Transcript, WhisperSTT
 from app.telemetry import Telemetry, Turn
@@ -37,6 +38,7 @@ class Pipeline:
         self.agent = agent or FinancialAgent()
         self.tts = tts or TTSService()
         self.telemetry = telemetry or Telemetry()
+        observability.start_pipeline_run()
 
     @property
     def stt(self) -> WhisperSTT:
@@ -44,6 +46,13 @@ class Pipeline:
         if self._stt is None:
             self._stt = WhisperSTT()
         return self._stt
+
+    def _finish(self, result: PipelineResult) -> PipelineResult:
+        result.timing = self.telemetry.end_turn()
+        observability.log_turn(
+            result.timing.stages, result.timing.total_ms, step=len(self.telemetry.turns)
+        )
+        return result
 
     def run_text(self, question: str, autoplay: bool = True) -> PipelineResult:
         """Answer a typed question and speak the reply.
@@ -64,8 +73,7 @@ class Pipeline:
         with self.telemetry.stage("tts"):
             result.speech = self.tts.speak(result.spoken_text, autoplay=autoplay)
 
-        result.timing = self.telemetry.end_turn()
-        return result
+        return self._finish(result)
 
     def run_audio(
         self,
@@ -89,8 +97,7 @@ class Pipeline:
             result.spoken_text = REPEAT_PROMPT
             with self.telemetry.stage("tts"):
                 result.speech = self.tts.speak(REPEAT_PROMPT, autoplay=autoplay)
-            result.timing = self.telemetry.end_turn()
-            return result
+            return self._finish(result)
 
         with self.telemetry.stage("agent"):
             result.agent_turn = self.agent.ask(transcript.text)
@@ -102,10 +109,10 @@ class Pipeline:
         with self.telemetry.stage("tts"):
             result.speech = self.tts.speak(result.spoken_text, autoplay=autoplay)
 
-        result.timing = self.telemetry.end_turn()
-        return result
+        return self._finish(result)
 
     def close(self) -> None:
+        observability.end_pipeline_run(self.telemetry)
         self.agent.close()
 
     def __enter__(self) -> "Pipeline":

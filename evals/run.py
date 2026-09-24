@@ -9,6 +9,7 @@ from statistics import median
  
 import yaml
  
+from app import observability
 from app.pipeline import Pipeline
  
 CASES_PATH = Path(__file__).parent / "cases.yaml"
@@ -128,6 +129,7 @@ def run(category: str | None, verbose: bool, threshold: float) -> int:
  
     results: list[CaseResult] = []
  
+    observability.start_eval_run(category, threshold)
     with Pipeline() as pipeline:
         for index, case in enumerate(cases, 1):
             result = CaseResult(
@@ -213,6 +215,17 @@ def report(results: list[CaseResult], threshold: float) -> int:
             f"p95 {percentile(latencies, 95):>6.0f}ms   "
             f"max {max(latencies):>6.0f}ms"
         )
+
+    observability.log_eval_summary(
+        pass_rate=rate,
+        latency_p50_ms=median(latencies) if latencies else None,
+        latency_p95_ms=percentile(latencies, 95) if latencies else None,
+        latency_max_ms=max(latencies) if latencies else None,
+        per_category={
+            name: (sum(1 for r in group if r.passed), len(group))
+            for name, group in categories.items()
+        },
+    )
  
     failures = [r for r in scored if not r.passed]
     if failures:

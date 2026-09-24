@@ -117,6 +117,33 @@ class Telemetry:
             f"{_percentile(totals, 95):>7.0f}   {totals[-1]:>7.0f}"
         )
         return "\n".join(lines)
+
+    def summary_metrics(self) -> dict[str, float]:
+        """The same p50/p95/max numbers as report_summary(), as a flat dict
+        of floats instead of a formatted string -- for feeding a metrics
+        backend (e.g. MLflow) rather than a terminal.
+        """
+        if not self.turns:
+            return {}
+
+        names: list[str] = []
+        for turn in self.turns:
+            for name in turn.stages:
+                if name not in names:
+                    names.append(name)
+
+        metrics: dict[str, float] = {}
+        for name in names:
+            values = sorted(t.stages[name] for t in self.turns if name in t.stages)
+            metrics[f"{name}_p50_ms"] = median(values)
+            metrics[f"{name}_p95_ms"] = _percentile(values, 95)
+            metrics[f"{name}_max_ms"] = values[-1]
+
+        totals = sorted(t.total_ms for t in self.turns)
+        metrics["total_p50_ms"] = median(totals)
+        metrics["total_p95_ms"] = _percentile(totals, 95)
+        metrics["total_max_ms"] = totals[-1]
+        return metrics
  
  
 def _percentile(sorted_values: list[float], pct: float) -> float:
