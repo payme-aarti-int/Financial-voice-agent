@@ -1,14 +1,31 @@
+<<<<<<< HEAD
 """Speech-to-text — local faster-whisper and Groq-hosted Whisper."""
+=======
+"""Speech-to-text via Groq's hosted Whisper API."""
+>>>>>>> f1080a8a8004aa9438fc569641640bc8e99951f4
 
 from __future__ import annotations
 
 import io
+<<<<<<< HEAD
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
 
+=======
+import logging
+import os
+from dataclasses import dataclass
+
+import httpx
+import numpy as np
+import soundfile as sf
+
+log = logging.getLogger(__name__)
+
+>>>>>>> f1080a8a8004aa9438fc569641640bc8e99951f4
 
 @dataclass
 class Transcript:
@@ -24,6 +41,15 @@ class Transcript:
 
     @property
     def is_suspect(self) -> bool:
+<<<<<<< HEAD
+=======
+        """Treat this transcript as untrustworthy.
+
+        Matters more for a financial agent: a confidently wrong number spoken
+        aloud has no scrollback and no citation. When this trips, ask the user
+        to repeat rather than answering.
+        """
+>>>>>>> f1080a8a8004aa9438fc569641640bc8e99951f4
         if self.language_probability < 0.5:
             return True
         if self.no_speech_prob is not None and self.no_speech_prob > 0.6:
@@ -31,6 +57,7 @@ class Transcript:
         return False
 
 
+<<<<<<< HEAD
 class WhisperSTT:
     """Local faster-whisper — kept as fallback."""
 
@@ -72,12 +99,12 @@ class WhisperSTT:
         )
 
 
+=======
+>>>>>>> f1080a8a8004aa9438fc569641640bc8e99951f4
 class GroqSTT:
     """Groq-hosted whisper-large-v3-turbo — faster than local CPU Whisper."""
 
     def __init__(self):
-        import os
-        import httpx
         self._api_key = os.getenv("LLM_API_KEY", "")
         self._model = os.getenv("STT_MODEL", "whisper-large-v3-turbo")
         self._client = httpx.Client(timeout=30)
@@ -109,7 +136,8 @@ class GroqSTT:
                 no_speech_prob=0.0 if text else 1.0,
             )
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
+            log.error("Groq transcription failed: %s", exc)
             return Transcript(
                 text="",
                 language="en",
@@ -118,8 +146,19 @@ class GroqSTT:
                 no_speech_prob=1.0,
             )
 
+<<<<<<< HEAD
     def warm_up(self) -> None:
         pass
 
     def close(self) -> None:
         self._client.close()
+=======
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> "GroqSTT":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+>>>>>>> f1080a8a8004aa9438fc569641640bc8e99951f4

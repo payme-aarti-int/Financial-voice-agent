@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +10,33 @@ from pathlib import Path
 import httpx
 
 log = logging.getLogger(__name__)
+
+# Groq's 429 body reads like "...Please try again in 38m0s." -- parse that
+# instead of retrying a doomed request every turn until the quota resets.
+_RETRY_AFTER_RE = re.compile(
+    r"try again in\s*(?:(?P<hours>\d+)h)?\s*(?:(?P<minutes>\d+)m)?\s*(?:(?P<seconds>\d+(?:\.\d+)?)s)?",
+    re.IGNORECASE,
+)
+
+
+def _parse_retry_after(response: httpx.Response) -> float | None:
+    """Seconds until it's worth trying again, if the server told us."""
+    header = response.headers.get("retry-after")
+    if header:
+        try:
+            return float(header)
+        except ValueError:
+            pass
+
+    match = _RETRY_AFTER_RE.search(response.text or "")
+    if match and any(match.groups()):
+        hours = float(match.group("hours") or 0)
+        minutes = float(match.group("minutes") or 0)
+        seconds = float(match.group("seconds") or 0)
+        total = hours * 3600 + minutes * 60 + seconds
+        if total > 0:
+            return total
+    return None
 
 
 @dataclass(frozen=True)
@@ -38,6 +66,10 @@ class OrpheusTTS:
         if not self.config.api_key:
             raise RuntimeError("LLM_API_KEY is empty -- check .env and app/__init__.py")
         self._client = httpx.Client(timeout=self.config.timeout_s)
+        # Set after a 429 so subsequent calls fail fast (no network round
+        # trip) instead of retrying a request that's guaranteed to fail
+        # again until the quota resets.
+        self._rate_limited_until: float | None = None
 
     def synthesize(self, text: str, out_path: str | Path | None = None) -> Speech:
         """Text in, audio bytes out. Never raises: a raised exception means the
@@ -45,6 +77,13 @@ class OrpheusTTS:
         text = (text or "").strip()
         if not text:
             return Speech(ok=False, error="empty text")
+
+        if self._rate_limited_until is not None:
+            remaining = self._rate_limited_until - time.monotonic()
+            if remaining > 0:
+                return Speech(ok=False, error=f"rate limited -- retry in {remaining:.0f}s")
+            log.info("Orpheus rate-limit cooldown over -- trying it again")
+            self._rate_limited_until = None
 
         payload = {
             "model": self.config.model,
@@ -70,6 +109,15 @@ class OrpheusTTS:
         elapsed_ms = (time.perf_counter() - started) * 1000
 
         if response.status_code != 200:
+            if response.status_code == 429:
+                retry_after = _parse_retry_after(response)
+                if retry_after:
+                    self._rate_limited_until = time.monotonic() + retry_after
+                    log.warning(
+                        "Orpheus rate-limited -- falling back to espeak for the "
+                        "next %.0fs, until the quota resets",
+                        retry_after,
+                    )
             detail = response.text[:400] if response.text else "(empty body)"
             return Speech(
                 ok=False,

@@ -60,9 +60,12 @@ def report(result: PipelineResult) -> None:
 
     if result.speech is not None:
         if result.speech.ok:
-            state = (
-                "played" if result.speech.played else f"saved {result.speech.wav_path}"
-            )
+            if result.speech.interrupted:
+                state = "interrupted (user started talking)"
+            elif result.speech.played:
+                state = "played"
+            else:
+                state = f"saved {result.speech.wav_path}"
             suffix = f" ({result.speech.error})" if result.speech.error else ""
             log.info("tts: %s%s", state, suffix)
         else:
@@ -80,6 +83,11 @@ def main() -> None:
     parser.add_argument("--audio-file", type=str, help="Answer from an audio file")
     parser.add_argument("--turns", type=int, default=0, help="Live mic turns")
     parser.add_argument("--duration", type=float, default=5.0)
+    parser.add_argument(
+        "--listen",
+        action="store_true",
+        help="Hands-free: VAD detects speech start/end automatically, no --duration needed",
+    )
     parser.add_argument("--no-play", action="store_true", help="Synthesize, do not play")
     parser.add_argument("--list-devices", action="store_true")
     args = parser.parse_args()
@@ -140,6 +148,62 @@ def main() -> None:
                 if peak_level(audio) < 0.01:
                     log.warning("near-silent capture -- mic recorded nothing?")
                 report(pipeline.run_audio(audio, autoplay=autoplay))
+            log.info("%s", pipeline.telemetry.report_summary())
+            return
+
+        if args.listen:
+            from collections import deque
+
+            from app.audio.listener import AutoListener
+
+            log.info(
+                "Listening -- just speak, no button needed. "
+                "You can talk over a reply to interrupt it -- I'll still answer "
+                "it once things settle. Ctrl+C to stop."
+            )
+            # Answers cut off by an interruption, queued to be spoken once the
+            # conversation settles down -- nothing you asked gets dropped.
+            pending: deque[tuple[str, str]] = deque(maxlen=3)
+            try:
+                with AutoListener() as listener:
+                    while True:
+                        audio = listener.get_utterance()
+                        log.info("--- speech detected, processing turn ---")
+                        result = pipeline.run_audio(
+                            audio,
+                            autoplay=autoplay,
+                            interrupt=lambda: listener.is_speech_active,
+                        )
+                        report(result)
+
+                        if (
+                            result.speech is not None
+                            and result.speech.interrupted
+                            and result.agent_turn is not None
+                        ):
+                            pending.append((result.agent_turn.question, result.agent_turn.answer))
+                            log.info(
+                                "--- interrupted -- I'll come back to that. "
+                                "Listening for what you said ---"
+                            )
+                            continue
+
+                        if pending:
+                            question, answer = pending.popleft()
+                            log.info('--- also answering your earlier question: "%s" ---', question)
+                            followup = f"Also, about what you asked before -- {answer}"
+                            speech = pipeline.tts.speak(
+                                followup,
+                                autoplay=autoplay,
+                                interrupt=lambda: listener.is_speech_active,
+                            )
+                            if speech.interrupted:
+                                pending.appendleft((question, answer))
+                                log.info("--- interrupted again -- keeping that one queued ---")
+            except KeyboardInterrupt:
+                print()
+            except Exception as exc:
+                log.error("listening stopped: %s", exc)
             log.info("%s", pipeline.telemetry.report_summary())
             return
 

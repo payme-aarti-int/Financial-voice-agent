@@ -34,3 +34,4 @@ openpyxl
 sentence-transformers
 matplotlib==3.11.2
 mlflow==3.16.1
+piper-tts==1.8.0
