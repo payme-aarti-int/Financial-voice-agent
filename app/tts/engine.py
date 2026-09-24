@@ -1,6 +1,7 @@
 from __future__ import annotations
  
 import logging
+import os
 import shutil
 import subprocess
 import time
@@ -14,6 +15,8 @@ import soundfile as sf
 from app.config import AUDIO
 
 log = logging.getLogger(__name__)
+
+DEFAULT_PIPER_MODEL = "models/piper/en_US-lessac-medium.onnx"
  
  
 @dataclass
@@ -120,6 +123,65 @@ class OrpheusEngine:
             self._client.close()
 
 
+class PiperEngine:
+    """Local, offline neural TTS (Piper: https://github.com/OHF-Voice/piper1-gpl,
+    MIT-licensed voices). Runs entirely on-device via onnxruntime -- no
+    network call, no API key, no rate limit, ever. Not as expressive as
+    Orpheus, but a large step up from espeak's formant synthesis, and it
+    never runs out of quota.
+
+    Get a voice with:
+        python -m piper.download_voices en_US-lessac-medium \\
+            --download-dir models/piper
+    """
+
+    def __init__(self, model_path: str | Path | None = None):
+        self._model_path = Path(model_path or os.getenv("PIPER_MODEL_PATH", DEFAULT_PIPER_MODEL))
+        self._voice = None
+        self._init_error: str | None = None
+
+        if not self._model_path.exists():
+            self._init_error = (
+                f"Piper model not found at {self._model_path} -- run: "
+                "python -m piper.download_voices en_US-lessac-medium "
+                "--download-dir models/piper"
+            )
+            return
+        try:
+            from piper import PiperVoice
+
+            self._voice = PiperVoice.load(str(self._model_path))
+        except Exception as exc:  # noqa: BLE001
+            self._init_error = str(exc)
+
+    @property
+    def available(self) -> bool:
+        return self._voice is not None
+
+    def synthesize(self, text: str, out_path: str | Path) -> Speech:
+        if not text.strip():
+            return Speech(text=text, error="empty text")
+        if not self.available:
+            return Speech(text=text, error=self._init_error or "Piper unavailable")
+
+        path = Path(out_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            import wave
+
+            with wave.open(str(path), "wb") as wav_file:
+                self._voice.synthesize_wav(text, wav_file)
+        except Exception as exc:  # noqa: BLE001
+            return Speech(text=text, error=f"Piper synthesis failed: {exc}")
+
+        info = sf.info(str(path))
+        return Speech(text=text, wav_path=path, duration_s=info.duration)
+
+    def close(self) -> None:
+        pass
+
+
 def play(
     wav_path: str | Path,
     interrupt: Callable[[], bool] | None = None,
@@ -167,20 +229,19 @@ class TTSService:
     """Synthesise then play, reporting what actually happened.
 
     Tries a chain of engines in order and speaks with whichever one works
-    first: Orpheus (natural voice, TTS_MODEL/TTS_VOICE in .env), then
-    espeak-ng (robotic, offline, always available) as the last resort. A
-    wrong-sounding voice beats no voice at all.
-
-    Groq currently only hosts one English TTS model (Orpheus) -- there is
-    no second Groq-hosted voice to fall back to with a separate quota, so
-    once Orpheus's daily token quota (external, account-level -- see
-    console.groq.com/settings/billing) is exhausted, espeak is genuinely
-    the only remaining option until it resets.
+    first:
+      1. Orpheus (best quality, natural voice, Groq-hosted -- limited by
+         an external daily token quota; TTS_MODEL/TTS_VOICE in .env).
+      2. Piper (local, offline, free, no rate limit ever -- a solid
+         neural voice, just less expressive than Orpheus).
+      3. espeak-ng (robotic, offline, always available) as the last
+         resort, in case Piper has no voice model downloaded either.
+    A wrong-sounding voice beats no voice at all.
     """
 
     def __init__(
         self,
-        engines: list[EspeakTTS | OrpheusEngine] | None = None,
+        engines: list[EspeakTTS | OrpheusEngine | PiperEngine] | None = None,
         output_dir: str = "audio/output",
     ):
         self.engines = engines or _default_engines()
@@ -228,14 +289,20 @@ class TTSService:
         return speech
 
 
-def _default_engines() -> list[EspeakTTS | OrpheusEngine]:
-    engines: list[EspeakTTS | OrpheusEngine] = []
+def _default_engines() -> list[EspeakTTS | OrpheusEngine | PiperEngine]:
+    engines: list[EspeakTTS | OrpheusEngine | PiperEngine] = []
 
     orpheus = OrpheusEngine()
     if orpheus.available:
         engines.append(orpheus)
     else:
         log.warning("Orpheus TTS unavailable (%s)", orpheus._init_error)
+
+    piper = PiperEngine()
+    if piper.available:
+        engines.append(piper)
+    else:
+        log.warning("Piper TTS unavailable (%s)", piper._init_error)
 
     engines.append(EspeakTTS())
     return engines
