@@ -3,8 +3,10 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
  
 import numpy as np
 import soundfile as sf
@@ -21,6 +23,7 @@ class Speech:
     wav_path: Path | None = None
     duration_s: float | None = None
     played: bool = False
+    interrupted: bool = False
     error: str | None = None
  
     @property
@@ -117,29 +120,49 @@ class OrpheusEngine:
             self._client.close()
 
 
-def play(wav_path: str | Path) -> tuple[bool, str | None]:
+def play(
+    wav_path: str | Path,
+    interrupt: Callable[[], bool] | None = None,
+    poll_s: float = 0.05,
+) -> tuple[bool, bool, str | None]:
+    """Play a WAV file, watching `interrupt` (if given) so a real person
+    talking over the agent can cut it off instead of waiting it out.
 
+    Returns (played_to_completion, was_interrupted, error).
+    """
     try:
         import sounddevice as sd
 
-        from app.audio.recorder import TIMEOUT_SLACK_S, wait_with_timeout
+        from app.audio.recorder import TIMEOUT_SLACK_S
     except Exception as exc:  # noqa: BLE001 - OSError when PortAudio is absent
-        return False, f"audio output unavailable: {exc}"
+        return False, False, f"audio output unavailable: {exc}"
 
     try:
         audio, sample_rate = sf.read(str(wav_path), dtype="float32")
         duration_s = len(audio) / sample_rate
         sd.play(np.squeeze(audio), sample_rate, device=AUDIO.device)
-        if not wait_with_timeout(duration_s + TIMEOUT_SLACK_S):
-            return False, (
-                f"playback did not finish within {duration_s + TIMEOUT_SLACK_S:.0f}s "
-                "-- the audio output device may be unresponsive or disconnected"
-            )
-        return True, None
+
+        deadline = time.monotonic() + duration_s + TIMEOUT_SLACK_S
+        while True:
+            if interrupt is not None and interrupt():
+                sd.stop()
+                return False, True, None
+
+            stream = sd.get_stream()
+            if stream is None or not stream.active:
+                return True, False, None
+
+            if time.monotonic() >= deadline:
+                sd.stop()
+                return False, False, (
+                    f"playback did not finish within {duration_s + TIMEOUT_SLACK_S:.0f}s "
+                    "-- the audio output device may be unresponsive or disconnected"
+                )
+            time.sleep(poll_s)
     except Exception as exc:  # noqa: BLE001
-        return False, f"playback failed: {exc}"
- 
- 
+        return False, False, f"playback failed: {exc}"
+
+
 class TTSService:
     """Synthesise then play, reporting what actually happened.
 
@@ -159,7 +182,17 @@ class TTSService:
         self.fallback_engine = fallback_engine or EspeakTTS()
         self.output_dir = Path(output_dir)
 
-    def speak(self, text: str, filename: str = "reply.wav", autoplay: bool = True) -> Speech:
+    def speak(
+        self,
+        text: str,
+        filename: str = "reply.wav",
+        autoplay: bool = True,
+        interrupt: Callable[[], bool] | None = None,
+    ) -> Speech:
+        """`interrupt`, if given, is polled while playing: return True from
+        it (e.g. "the user started talking") and playback stops immediately
+        instead of running to completion.
+        """
         speech = self.engine.synthesize(text, self.output_dir / filename)
         if not speech.ok and self.engine is not self.fallback_engine:
             log.warning("primary TTS failed (%s), falling back to espeak", speech.error)
@@ -167,8 +200,9 @@ class TTSService:
         if not speech.ok or not autoplay:
             return speech
 
-        played, error = play(speech.wav_path)
+        played, interrupted, error = play(speech.wav_path, interrupt=interrupt)
         speech.played = played
+        speech.interrupted = interrupted
         if error:
             # Not fatal: the WAV exists and the user can still play it manually.
             speech.error = error

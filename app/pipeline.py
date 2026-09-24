@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 
@@ -54,8 +55,17 @@ class Pipeline:
         )
         return result
 
-    def run_text(self, question: str, autoplay: bool = True) -> PipelineResult:
-        """Answer a typed question and speak the reply."""
+    def run_text(
+        self,
+        question: str,
+        autoplay: bool = True,
+        interrupt: Callable[[], bool] | None = None,
+    ) -> PipelineResult:
+        """Answer a typed question and speak the reply.
+
+        `interrupt`, if given, is polled during playback -- return True from
+        it (e.g. the user started talking again) to cut speech off early.
+        """
         self.telemetry.begin_turn()
         result = PipelineResult()
 
@@ -67,7 +77,9 @@ class Pipeline:
             result.spoken_text = to_speakable(result.agent_turn.answer)
 
         with self.telemetry.stage("tts"):
-            result.speech = self.tts.speak(result.spoken_text, autoplay=autoplay)
+            result.speech = self.tts.speak(
+                result.spoken_text, autoplay=autoplay, interrupt=interrupt
+            )
 
         return self._finish(result)
 
@@ -75,7 +87,12 @@ class Pipeline:
         self,
         audio: np.ndarray | str | Path,
         autoplay: bool = True,
+        interrupt: Callable[[], bool] | None = None,
     ) -> PipelineResult:
+        """`interrupt`, if given, is polled during playback -- return True
+        from it (e.g. the user started talking again) to cut speech off
+        early instead of running it to completion.
+        """
         self.telemetry.begin_turn()
         result = PipelineResult()
 
@@ -92,7 +109,9 @@ class Pipeline:
         if result.rejected_reason:
             result.spoken_text = REPEAT_PROMPT
             with self.telemetry.stage("tts"):
-                result.speech = self.tts.speak(REPEAT_PROMPT, autoplay=autoplay)
+                result.speech = self.tts.speak(
+                    REPEAT_PROMPT, autoplay=autoplay, interrupt=interrupt
+                )
             return self._finish(result)
 
         with self.telemetry.stage("agent"):
@@ -103,7 +122,9 @@ class Pipeline:
             result.spoken_text = to_speakable(result.agent_turn.answer)
 
         with self.telemetry.stage("tts"):
-            result.speech = self.tts.speak(result.spoken_text, autoplay=autoplay)
+            result.speech = self.tts.speak(
+                result.spoken_text, autoplay=autoplay, interrupt=interrupt
+            )
 
         return self._finish(result)
 

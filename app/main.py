@@ -60,9 +60,12 @@ def report(result: PipelineResult) -> None:
 
     if result.speech is not None:
         if result.speech.ok:
-            state = (
-                "played" if result.speech.played else f"saved {result.speech.wav_path}"
-            )
+            if result.speech.interrupted:
+                state = "interrupted (user started talking)"
+            elif result.speech.played:
+                state = "played"
+            else:
+                state = f"saved {result.speech.wav_path}"
             suffix = f" ({result.speech.error})" if result.speech.error else ""
             log.info("tts: %s%s", state, suffix)
         else:
@@ -151,12 +154,23 @@ def main() -> None:
         if args.listen:
             from app.audio.listener import AutoListener
 
-            log.info("Listening -- just speak, no button needed. Ctrl+C to stop.")
-            listener = AutoListener()
+            log.info(
+                "Listening -- just speak, no button needed. "
+                "You can talk over a reply to interrupt it. Ctrl+C to stop."
+            )
             try:
-                for audio in listener.utterances():
-                    log.info("--- speech detected, processing turn ---")
-                    report(pipeline.run_audio(audio, autoplay=autoplay))
+                with AutoListener() as listener:
+                    while True:
+                        audio = listener.get_utterance()
+                        log.info("--- speech detected, processing turn ---")
+                        result = pipeline.run_audio(
+                            audio,
+                            autoplay=autoplay,
+                            interrupt=lambda: listener.is_speech_active,
+                        )
+                        report(result)
+                        if result.speech is not None and result.speech.interrupted:
+                            log.info("--- interrupted -- listening for what you said ---")
             except KeyboardInterrupt:
                 print()
             except Exception as exc:
