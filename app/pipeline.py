@@ -7,7 +7,7 @@ import numpy as np
 
 from app import observability
 from app.agent.loop import AgentTurn, FinancialAgent
-from app.stt.whisper_stt import Transcript, WhisperSTT
+from app.stt.whisper_stt import Transcript, WhisperSTT, GroqSTT
 from app.telemetry import Telemetry, Turn
 from app.tts.engine import Speech, TTSService
 from app.tts.speakable import to_speakable
@@ -29,7 +29,7 @@ class PipelineResult:
 class Pipeline:
     def __init__(
         self,
-        stt: WhisperSTT | None = None,
+        stt: GroqSTT | None = None,
         agent: FinancialAgent | None = None,
         tts: TTSService | None = None,
         telemetry: Telemetry | None = None,
@@ -41,10 +41,10 @@ class Pipeline:
         observability.start_pipeline_run()
 
     @property
-    def stt(self) -> WhisperSTT:
+    def stt(self) -> GroqSTT:
         """Loaded lazily: text-only runs should not pay for model load."""
         if self._stt is None:
-            self._stt = WhisperSTT()
+            self._stt = GroqSTT()
         return self._stt
 
     def _finish(self, result: PipelineResult) -> PipelineResult:
@@ -55,11 +55,7 @@ class Pipeline:
         return result
 
     def run_text(self, question: str, autoplay: bool = True) -> PipelineResult:
-        """Answer a typed question and speak the reply.
-
-        Also the path an eval harness uses -- it removes ASR variance and tests
-        the agent in isolation.
-        """
+        """Answer a typed question and speak the reply."""
         self.telemetry.begin_turn()
         result = PipelineResult()
 
