@@ -166,20 +166,24 @@ def play(
 class TTSService:
     """Synthesise then play, reporting what actually happened.
 
-    Prefers Orpheus (natural voice, via Groq -- TTS_MODEL/TTS_VOICE in
-    .env) and falls back to espeak-ng (robotic, offline, always available)
-    if Orpheus isn't configured or a synthesis call fails. A wrong-sounding
-    voice beats no voice at all.
+    Tries a chain of engines in order and speaks with whichever one works
+    first: Orpheus (natural voice, TTS_MODEL/TTS_VOICE in .env), then
+    espeak-ng (robotic, offline, always available) as the last resort. A
+    wrong-sounding voice beats no voice at all.
+
+    Groq currently only hosts one English TTS model (Orpheus) -- there is
+    no second Groq-hosted voice to fall back to with a separate quota, so
+    once Orpheus's daily token quota (external, account-level -- see
+    console.groq.com/settings/billing) is exhausted, espeak is genuinely
+    the only remaining option until it resets.
     """
 
     def __init__(
         self,
-        engine: EspeakTTS | OrpheusEngine | None = None,
-        fallback_engine: EspeakTTS | None = None,
+        engines: list[EspeakTTS | OrpheusEngine] | None = None,
         output_dir: str = "audio/output",
     ):
-        self.engine = engine or _default_engine()
-        self.fallback_engine = fallback_engine or EspeakTTS()
+        self.engines = engines or _default_engines()
         self.output_dir = Path(output_dir)
 
     def speak(
@@ -193,17 +197,26 @@ class TTSService:
         it (e.g. "the user started talking") and playback stops immediately
         instead of running to completion.
         """
-        speech = self.engine.synthesize(text, self.output_dir / filename)
-        if not speech.ok and self.engine is not self.fallback_engine:
-            # "rate limited" means the engine itself already logged this
-            # once and is deliberately short-circuiting -- not a new
-            # failure, so don't re-warn on every single turn during the
-            # cooldown.
-            error = speech.error or ""
-            log_fn = log.info if error.startswith("rate limited") else log.warning
-            log_fn("primary TTS failed (%s), falling back to espeak", speech.error)
-            speech = self.fallback_engine.synthesize(text, self.output_dir / filename)
-        if not speech.ok or not autoplay:
+        speech = None
+        for i, engine in enumerate(self.engines):
+            speech = engine.synthesize(text, self.output_dir / filename)
+            if speech.ok:
+                break
+
+            is_last = i == len(self.engines) - 1
+            if not is_last:
+                # "rate limited" means the engine itself already logged
+                # this once and is deliberately short-circuiting -- not a
+                # new failure, so don't re-warn on every single turn.
+                error = speech.error or ""
+                log_fn = log.info if error.startswith("rate limited") else log.warning
+                next_engine = type(self.engines[i + 1]).__name__
+                log_fn(
+                    "%s failed (%s), trying %s",
+                    type(engine).__name__, speech.error, next_engine,
+                )
+
+        if speech is None or not speech.ok or not autoplay:
             return speech
 
         played, interrupted, error = play(speech.wav_path, interrupt=interrupt)
@@ -215,9 +228,14 @@ class TTSService:
         return speech
 
 
-def _default_engine() -> EspeakTTS | OrpheusEngine:
+def _default_engines() -> list[EspeakTTS | OrpheusEngine]:
+    engines: list[EspeakTTS | OrpheusEngine] = []
+
     orpheus = OrpheusEngine()
     if orpheus.available:
-        return orpheus
-    log.warning("Orpheus TTS unavailable (%s); falling back to espeak-ng", orpheus._init_error)
-    return EspeakTTS()
+        engines.append(orpheus)
+    else:
+        log.warning("Orpheus TTS unavailable (%s)", orpheus._init_error)
+
+    engines.append(EspeakTTS())
+    return engines
