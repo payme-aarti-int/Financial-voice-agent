@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from typing import Any
- 
+
+from mlflow.entities import SpanType
+
+from app import observability
 from app.agent.tools import ToolRegistry
 from app.llm.client import LLMClient
  
@@ -80,6 +83,7 @@ class FinancialAgent:
         if len(self.history) > max_messages:
             self.history = self.history[-max_messages:]
 
+    @observability.trace(name="agent.ask", span_type=SpanType.AGENT)
     def ask(self, question: str) -> AgentTurn:
         turn = AgentTurn(question=question)
         messages: list[dict[str, Any]] = [

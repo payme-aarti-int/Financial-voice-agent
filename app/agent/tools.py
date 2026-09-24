@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Callable
 
+from app import observability
 from app.financial.financials import METRICS, FinancialsRepository
 
 _METRIC_LIST = ", ".join(sorted(METRICS))
@@ -229,9 +230,12 @@ class ToolRegistry:
             if isinstance(arguments.get(key), str):
                 arguments[key] = [arguments[key]]
 
-        try:
-            return handler(**arguments)
-        except TypeError as exc:
-            return {"available": False, "error": f"Bad arguments for {name}: {exc}"}
-        except Exception as exc:
-            return {"available": False, "error": f"{name} failed: {exc}"}
+        with observability.tool_span(name, arguments) as set_output:
+            try:
+                result = handler(**arguments)
+            except TypeError as exc:
+                result = {"available": False, "error": f"Bad arguments for {name}: {exc}"}
+            except Exception as exc:
+                result = {"available": False, "error": f"{name} failed: {exc}"}
+            set_output(result)
+            return result

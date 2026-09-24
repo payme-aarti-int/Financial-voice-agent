@@ -8,8 +8,11 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator
 
 import httpx
+from mlflow.entities import SpanType
 
 from dotenv import load_dotenv
+
+from app import observability
 
 log = logging.getLogger(__name__)
 
@@ -56,6 +59,7 @@ class LLMClient:
     def __exit__(self, *exc: object) -> None:
         self.close()
 
+    @observability.trace(name="llm.complete", span_type=SpanType.LLM)
     def complete(
         self,
         messages: list[dict[str, Any]],

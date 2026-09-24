@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable
 
 import numpy as np
+from mlflow.entities import SpanType
 
 from app import observability
 from app.agent.loop import AgentTurn, FinancialAgent
@@ -55,6 +56,7 @@ class Pipeline:
         )
         return result
 
+    @observability.trace(name="pipeline.run_text", span_type=SpanType.CHAIN)
     def run_text(
         self,
         question: str,
@@ -83,6 +85,7 @@ class Pipeline:
 
         return self._finish(result)
 
+    @observability.trace(name="pipeline.run_audio", span_type=SpanType.CHAIN)
     def run_audio(
         self,
         audio: np.ndarray | str | Path,
