@@ -126,6 +126,7 @@
   .ask-bar button:active { transform:scale(.97); }
   .ask-bar button:disabled { opacity:.5; cursor:not-allowed; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/bundle.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -230,133 +231,78 @@ $('askForm').addEventListener('submit', (e)=>{
 const starterChip=$('starterChip');
 if(starterChip) starterChip.addEventListener('click', ()=> askText(starterChip.textContent));
 
-const TARGET_RATE=16000;
+const TARGET_RATE = 16000;
+let vadInstance = null;
+let listening = false;
+const micBtn = $('mic');
 
-// Hands-free capture: a simple energy-based VAD (RMS over each ~93ms mic
-// buffer), mirroring app/audio/utterance.py's pre-roll/silence logic --
-// but a plain amplitude threshold instead of Silero, since the browser
-// has no server-side model to call. The same speech-onset event both (a)
-// starts capturing a new utterance and (b) interrupts whatever reply is
-// currently playing, exactly like AutoListener.is_speech_active powers
-// barge-in for the CLI's --listen mode.
-const PRE_ROLL_S=0.5, MIN_SILENCE_S=0.6, MIN_UTTERANCE_S=0.3, MAX_UTTERANCE_S=30;
-const SPEECH_RMS=0.02;       // amplitude above this counts as "speech"
-const ONSET_CONFIRM_CHUNKS=2; // consecutive loud chunks required to confirm onset, so a single noise spike can't trigger it
-
-let audioCtx,source,processor,stream,listening=false;
-let preRoll=[],preRollSamples=0,loudStreak=0;
-let uttChunks=[],uttRecording=false,uttStartedAt=0,uttLastSpeechAt=0;
-let uttQueue=[],sending=false;
-const micBtn=$('mic');
-
-function rms(buf){ let s=0; for(let i=0;i<buf.length;i++) s+=buf[i]*buf[i]; return Math.sqrt(s/buf.length); }
-
-function onAudioChunk(inp,rate){
-  const level=rms(inp);
-  levelEl.style.width=Math.min(100,level*600)+'%';
-  const now=performance.now()/1000;
-  loudStreak=level>SPEECH_RMS ? loudStreak+1 : 0;
-
-  if(!uttRecording){
-    preRoll.push(inp); preRollSamples+=inp.length;
-    const maxPreRoll=Math.round(PRE_ROLL_S*rate);
-    while(preRollSamples>maxPreRoll && preRoll.length>1) preRollSamples-=preRoll.shift().length;
-
-    if(loudStreak>=ONSET_CONFIRM_CHUNKS){
-      uttRecording=true; uttChunks=preRoll; preRoll=[]; preRollSamples=0;
-      uttStartedAt=now; uttLastSpeechAt=now;
-      micBtn.classList.add('speaking');
-      if(currentAudio && !currentAudio.paused){ currentAudio.pause(); currentAudio=null; setStatus('Interrupted -- listening...'); }
-      else setStatus('Listening...');
-    }
+async function startListening() {
+  if (listening) return;
+  if (!navigator.mediaDevices) {
+    setStatus('Microphone blocked: browsers require HTTPS or localhost', 'err');
     return;
   }
-
-  uttChunks.push(inp);
-  if(level>SPEECH_RMS) uttLastSpeechAt=now;
-  const elapsed=now-uttStartedAt, silence=now-uttLastSpeechAt;
-  if(silence>=MIN_SILENCE_S || elapsed>=MAX_UTTERANCE_S){
-    const merged=flatten(uttChunks);
-    uttRecording=false; uttChunks=[];
-    micBtn.classList.remove('speaking');
-    if(merged.length/rate>=MIN_UTTERANCE_S) uttQueue.push({samples:merged,rate});
-    processQueue();
+  try {
+    vadInstance = await vad.MicVAD.new({
+      model: "v5",
+      positiveSpeechThreshold: 0.6,
+      negativeSpeechThreshold: 0.45,
+      minSpeechFrames: 4,
+      preSpeechPadFrames: 10,
+      redemptionFrames: 8,
+      onSpeechStart: () => {
+        if (currentAudio && !currentAudio.paused) {
+          currentAudio.pause(); currentAudio = null;
+          setStatus('Interrupted — listening...');
+        } else {
+          setStatus('Listening...');
+        }
+        micBtn.classList.add('speaking');
+        levelEl.style.width = '60%';
+      },
+      onSpeechEnd: async (audio) => {
+        micBtn.classList.remove('speaking');
+        levelEl.style.width = '0%';
+        setStatus('Sending...');
+        const wav = encodeWav(audio, TARGET_RATE);
+        const f = new FormData();
+        f.append('audio', new Blob([wav], {type:'audio/wav'}), 'turn.wav');
+        try {
+          const r = await fetch('/api/voice', {method:'POST', body:f});
+          render(await r.json());
+        } catch(e) {
+          setStatus('Upload failed: ' + e.message, 'err');
+        }
+        if (listening) setStatus('Listening...');
+      },
+      onVADMisfire: () => {
+        micBtn.classList.remove('speaking');
+        levelEl.style.width = '0%';
+        if (listening) setStatus('Listening...');
+      },
+    });
+    await vadInstance.start();
+    listening = true;
+    micBtn.classList.add('listening');
+    micBtn.title = 'Tap to stop listening';
+    setStatus('Listening...');
+  } catch(e) {
+    setStatus('Microphone error: ' + e.message, 'err');
   }
 }
 
-async function processQueue(){
-  if(sending || !uttQueue.length) return;
-  sending=true;
-  const {samples,rate}=uttQueue.shift();
-  const wav=encodeWav(downsample(samples,rate,TARGET_RATE),TARGET_RATE);
-  setStatus('Sending '+(wav.byteLength/1024).toFixed(0)+' KB...');
-  try{ const r=await fetch('/api/voice',{method:'POST',body:form(wav)}); render(await r.json()); }
-  catch(e){ setStatus('Upload failed: '+e.message,'err'); }
-  sending=false;
-  if(uttQueue.length) processQueue();
-  else if(listening) setStatus('Listening...');
-}
-function form(wav){ const f=new FormData(); f.append('audio',new Blob([wav],{type:'audio/wav'}),'turn.wav'); return f; }
-
-async function startListening(){
-  if(listening) return;
-  try{ stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}}); }
-  catch(e){ setStatus('Microphone blocked: '+e.message+' (browsers require HTTPS or localhost)','err'); return; }
-  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  source=audioCtx.createMediaStreamSource(stream);
-  processor=audioCtx.createScriptProcessor(4096,1,1);
-  preRoll=[]; preRollSamples=0; loudStreak=0; uttChunks=[]; uttRecording=false;
-  listening=true;
-  processor.onaudioprocess=e=>{
-    if(!listening) return;
-    onAudioChunk(new Float32Array(e.inputBuffer.getChannelData(0)), audioCtx.sampleRate);
-  };
-  source.connect(processor); processor.connect(audioCtx.destination);
-  micBtn.classList.add('listening');
-  micBtn.title='Tap to stop listening';
-  setStatus('Listening...');
-}
-
-function stopListening(){
-  if(!listening) return;
-  listening=false;
-  processor.disconnect(); source.disconnect();
-  stream.getTracks().forEach(t=>t.stop());
-  audioCtx.close();
-  if(currentAudio){ currentAudio.pause(); currentAudio=null; }
-  micBtn.classList.remove('listening','speaking');
-  micBtn.title='Tap to speak';
-  levelEl.style.width='0%';
+function stopListening() {
+  if (!listening) return;
+  listening = false;
+  if (vadInstance) { vadInstance.pause(); vadInstance = null; }
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  micBtn.classList.remove('listening', 'speaking');
+  micBtn.title = 'Tap to speak';
+  levelEl.style.width = '0%';
   setStatus('');
 }
-function flatten(bufs){ let n=0; for(const b of bufs) n+=b.length;
-  const o=new Float32Array(n); let k=0; for(const b of bufs){ o.set(b,k); k+=b.length; } return o; }
-function downsample(buf,from,to){
-  if(to>=from) return buf;
-  const ratio=from/to, out=new Float32Array(Math.round(buf.length/ratio));
-  for(let i=0;i<out.length;i++){
-    const s=Math.round(i*ratio), e=Math.min(Math.round((i+1)*ratio),buf.length);
-    let sum=0,c=0; for(let j=s;j<e;j++){ sum+=buf[j]; c++; }
-    out[i]=c?sum/c:0;
-  }
-  return out;
-}
-function encodeWav(samples,rate){
-  const buf=new ArrayBuffer(44+samples.length*2), view=new DataView(buf);
-  const str=(o,s)=>{ for(let i=0;i<s.length;i++) view.setUint8(o+i,s.charCodeAt(i)); };
-  str(0,'RIFF'); view.setUint32(4,36+samples.length*2,true); str(8,'WAVE'); str(12,'fmt ');
-  view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
-  view.setUint32(24,rate,true); view.setUint32(28,rate*2,true);
-  view.setUint16(32,2,true); view.setUint16(34,16,true);
-  str(36,'data'); view.setUint32(40,samples.length*2,true);
-  let o=44;
-  for(let i=0;i<samples.length;i++,o+=2){
-    const s=Math.max(-1,Math.min(1,samples[i]));
-    view.setInt16(o,s<0?s*0x8000:s*0x7fff,true);
-  }
-  return buf;
-}
-micBtn.addEventListener('click',()=> listening?stopListening():startListening());
+
+micBtn.addEventListener('click', () => listening ? stopListening() : startListening());
 </script>
 </body>
 </html>
