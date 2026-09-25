@@ -5,125 +5,329 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financial Voice Agent</title>
 <style>
-  :root { --bg:#fff; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2e2e2;
-          --accent:#2b5cff; --panel:#f7f7f8; --warn:#b45309; --err:#b91c1c; --ok:#15803d; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#17171a; --fg:#ececed; --muted:#9a9aa0; --line:#2e2e33;
-            --accent:#6b8cff; --panel:#1f1f23; --warn:#fbbf24; --err:#f87171; --ok:#4ade80; }
+  :root {
+    --fg:#f2f1fb; --muted:#a3a0c0; --line:rgba(255,255,255,.10);
+    --panel:rgba(255,255,255,.06); --panel-solid:#1b1830;
+    --accent1:#8b5cf6; --accent2:#06b6d4; --accent3:#ec4899;
+    --warn:#fbbf24; --err:#fb7185; --ok:#34d399;
   }
   * { box-sizing: border-box; }
-  body { margin:0; padding:24px; background:var(--bg); color:var(--fg);
-         font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-         max-width:780px; margin-inline:auto; }
-  h1 { font-size:20px; margin:0 0 4px; }
-  .sub { color:var(--muted); font-size:13px; margin-bottom:24px; }
-  .row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-  input[type=text] { flex:1 1 260px; padding:10px 12px; font:inherit;
-    border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); }
-  button { padding:10px 16px; font:inherit; font-weight:500; cursor:pointer;
-    border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--fg); }
-  button.primary { background:var(--accent); color:#fff; border-color:transparent; }
-  button.rec { background:var(--err); color:#fff; border-color:transparent; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  #status { font-size:13px; color:var(--muted); min-height:20px; margin-bottom:12px; }
-  .card { border:1px solid var(--line); border-radius:10px; padding:14px 16px;
-          margin-bottom:12px; background:var(--panel); }
-  .label { font-size:11px; text-transform:uppercase; letter-spacing:.06em;
-           color:var(--muted); margin-bottom:4px; }
-  .answer { font-size:16px; }
-  .tools { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:var(--muted); }
-  .avail-true { color:var(--ok); } .avail-false { color:var(--warn); } .err { color:var(--err); }
-  .meter { height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:8px; }
-  .meter > div { height:100%; width:0%; background:var(--accent); transition:width .08s linear; }
-  .hint { font-size:12px; color:var(--muted); margin-top:20px; }
+  html, body { height: 100%; }
+  body {
+    margin:0; color:var(--fg);
+    font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    display:flex; flex-direction:column;
+    background-color:#0a0a14;
+    background-image:
+      radial-gradient(circle at 15% -10%, rgba(139,92,246,.40), transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(6,182,212,.30), transparent 45%),
+      radial-gradient(circle at 30% 115%, rgba(236,72,153,.30), transparent 50%),
+      radial-gradient(circle at 90% 90%, rgba(139,92,246,.20), transparent 45%);
+    background-attachment:fixed;
+  }
+  ::selection { background:var(--accent1); color:#fff; }
+  ::-webkit-scrollbar { width:8px; }
+  ::-webkit-scrollbar-thumb { background:linear-gradient(var(--accent1),var(--accent2)); border-radius:8px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+
+  .app { max-width:720px; width:100%; margin-inline:auto; height:100%;
+         display:flex; flex-direction:column; padding:0 16px; }
+
+  header { padding:22px 4px 12px; flex:0 0 auto; }
+  h1 { font-size:22px; font-weight:800; letter-spacing:-.02em; margin:0 0 4px;
+       background:linear-gradient(90deg, var(--accent3), var(--accent1) 45%, var(--accent2));
+       background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+       animation:sheen 6s linear infinite; }
+  @keyframes sheen { 0% { background-position:0% 50%; } 100% { background-position:200% 50%; } }
+  .sub { color:var(--muted); font-size:12.5px; }
+
+  .transcript { flex:1 1 auto; overflow-y:auto; padding:8px 2px 12px; display:flex;
+                flex-direction:column; gap:10px; min-height:120px; }
+  .empty-hint { margin:auto; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .empty-title { font-size:17px; font-weight:700; color:var(--fg); }
+  .starter-chip {
+    font:inherit; font-size:13px; color:var(--fg); cursor:pointer;
+    padding:10px 18px; border-radius:20px; border:1px solid var(--line);
+    background:var(--panel); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    transition:background .15s, transform .15s;
+  }
+  .starter-chip:hover { background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:#fff; border-color:transparent; }
+  .starter-chip:active { transform:scale(.96); }
+
+  .bubble-row { display:flex; }
+  .bubble-row.user { justify-content:flex-end; }
+  .bubble-row.agent { justify-content:flex-start; }
+  .bubble { max-width:80%; padding:10px 14px; border-radius:16px; font-size:14.5px; }
+  .bubble-row.user .bubble {
+    background:linear-gradient(135deg, var(--accent1), var(--accent2));
+    color:#fff; border-bottom-right-radius:4px;
+    box-shadow:0 6px 20px -6px rgba(139,92,246,.55);
+  }
+  .bubble-row.agent .bubble {
+    background:var(--panel); color:var(--fg); border:1px solid var(--line);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom-left-radius:4px;
+  }
+  .bubble.err { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .meta { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; color:var(--muted);
+          margin-top:4px; padding:0 4px; opacity:.8; }
+  .avail-true { color:var(--ok); } .avail-false { color:var(--warn); }
+
+  .mic-area { flex:0 0 auto; display:flex; flex-direction:column; align-items:center;
+              gap:10px; padding:8px 0 16px; }
+  .mic-btn {
+    width:72px; height:72px; border-radius:50%; cursor:pointer;
+    background:var(--panel); color:var(--fg); border:1px solid var(--line);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    display:flex; align-items:center; justify-content:center;
+    transition:background .2s, box-shadow .2s, transform .15s;
+  }
+  .mic-btn:hover { transform:scale(1.04); }
+  .mic-btn:active { transform:scale(.97); }
+  .mic-btn svg { width:28px; height:28px; }
+  .mic-btn.listening {
+    background:linear-gradient(135deg, var(--accent1), var(--accent2));
+    color:#fff; border-color:transparent;
+    box-shadow:0 0 0 8px rgba(139,92,246,.18), 0 0 32px rgba(139,92,246,.55);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .mic-btn.speaking {
+    background:linear-gradient(135deg, var(--accent3), #f43f5e);
+    color:#fff; border-color:transparent;
+    box-shadow:0 0 0 8px rgba(236,72,153,.20), 0 0 34px rgba(236,72,153,.65);
+    animation:none;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow:0 0 0 8px rgba(139,92,246,.18), 0 0 26px rgba(139,92,246,.5); }
+    50% { box-shadow:0 0 0 14px rgba(6,182,212,.12), 0 0 40px rgba(6,182,212,.55); }
+  }
+  .meter { width:150px; height:3px; background:var(--line); border-radius:2px; overflow:hidden; }
+  .meter > div { height:100%; width:0%; background:linear-gradient(90deg, var(--accent1), var(--accent2), var(--accent3)); transition:width .08s linear; }
+  #status { font-size:12.5px; color:var(--muted); min-height:16px; }
+  #status.err { color:var(--err); }
+
+  .ask-bar { flex:0 0 auto; display:flex; gap:8px; padding:0 0 20px; }
+  .ask-bar input[type=text] {
+    flex:1 1 auto; padding:13px 18px; font:inherit;
+    border:1px solid var(--line); border-radius:26px;
+    background:var(--panel); color:var(--fg);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  }
+  .ask-bar input[type=text]::placeholder { color:var(--muted); }
+  .ask-bar input[type=text]:focus { outline:none; box-shadow:0 0 0 3px rgba(139,92,246,.45); }
+  .ask-bar button {
+    padding:0 22px; font:inherit; font-weight:700; cursor:pointer;
+    border:none; border-radius:26px; color:#fff;
+    background:linear-gradient(135deg, var(--accent1), var(--accent2));
+    box-shadow:0 6px 20px -6px rgba(139,92,246,.6);
+    transition:filter .15s, transform .15s;
+  }
+  .ask-bar button:hover { filter:brightness(1.1); }
+  .ask-bar button:active { transform:scale(.97); }
+  .ask-bar button:disabled { opacity:.5; cursor:not-allowed; }
 </style>
 </head>
 <body>
-<h1>Financial Voice Agent</h1>
-<div class="sub">Monthly P&amp;L, Jan 2024 &ndash; Dec 2025. Every figure comes from a CSV row, never from the model.</div>
-<div class="row">
-  <input type="text" id="q" placeholder="What was EBITDA in Q3 2025?" autocomplete="off">
-  <button class="primary" id="send">Ask</button>
-  <button id="mic">Hold to talk</button>
+<div class="app">
+  <header>
+    <h1>Financial Voice Agent</h1>
+    <div class="sub">Monthly P&amp;L, Jan 2024 &ndash; Dec 2025. Every figure comes from a CSV row, never from the model.</div>
+  </header>
+
+  <div class="transcript" id="out">
+    <div class="empty-hint" id="emptyHint">
+      <div class="empty-title">Tap to speak</div>
+      <button type="button" class="starter-chip" id="starterChip">What was EBITDA in Q3 2025?</button>
+    </div>
+  </div>
+
+  <div class="mic-area">
+    <button id="mic" class="mic-btn" aria-label="Tap to speak" title="Tap to speak">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.08A7 7 0 0 0 19 11Z"/></svg>
+    </button>
+    <div class="meter"><div id="level"></div></div>
+    <div id="status"></div>
+  </div>
+
+  <form class="ask-bar" id="askForm">
+    <input type="text" id="q" placeholder="Ask me a question..." autocomplete="off">
+    <button class="primary" id="send" type="submit">Send</button>
+  </form>
 </div>
-<div class="meter"><div id="level"></div></div>
-<div id="status"></div>
-<div id="out"></div>
-<div class="hint">Microphone capture runs in this browser, not on the server. Speech output uses your browser's built-in voice.</div>
 <script>
 const $ = id => document.getElementById(id);
-const statusEl = $('status'), outEl = $('out'), levelEl = $('level');
+const statusEl = $('status'), outEl = $('out'), levelEl = $('level'), emptyHint = $('emptyHint');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const card = (l,b) => '<div class="card"><div class="label">'+l+'</div>'+b+'</div>';
 function setStatus(m,c){ statusEl.textContent=m||''; statusEl.className=c||''; }
-function speak(t){ if(!t) return; fetch("/api/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t})}).then(r=>r.blob()).then(b=>{const a=new Audio(URL.createObjectURL(b));a.play();}).catch(e=>console.error("tts failed",e)); }
-function render(d){
-  if(d.error){ outEl.innerHTML=card('Error','<span class="err">'+esc(d.error)+'</span>'); return; }
-  let h='';
-  if(d.heard) h+=card('Heard',esc(d.heard));
-  if(d.rejected) h+=card('Rejected','<span class="err">'+esc(d.rejected)+'</span>');
-  if(d.answer) h+=card('Answer','<div class="answer">'+esc(d.answer)+'</div>');
+
+function addBubble(role, html, cls){
+  if(emptyHint) emptyHint.remove();
+  const row=document.createElement('div');
+  row.className='bubble-row '+role;
+  const bubble=document.createElement('div');
+  bubble.className='bubble'+(cls?(' '+cls):'');
+  bubble.innerHTML=html;
+  row.appendChild(bubble);
+  outEl.appendChild(row);
+  outEl.scrollTop=outEl.scrollHeight;
+  return row;
+}
+function addMeta(html){
+  const div=document.createElement('div');
+  div.className='meta';
+  div.innerHTML=html;
+  outEl.appendChild(div);
+  outEl.scrollTop=outEl.scrollHeight;
+}
+
+let currentAudio=null;
+function speak(t){
+  if(!t) return;
+  fetch("/api/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t})})
+    .then(r=>r.blob())
+    .then(b=>{
+      const a=new Audio(URL.createObjectURL(b));
+      currentAudio=a;
+      a.addEventListener('ended',()=>{ if(currentAudio===a){ currentAudio=null; if(listening) setStatus('Listening...'); } });
+      a.play();
+    })
+    .catch(e=>console.error("tts failed",e));
+}
+
+function render(d, userText){
+  if(d.error){ addBubble('agent','<span class="err">'+esc(d.error)+'</span>'); return; }
+  if(userText!==undefined) addBubble('user', esc(userText));
+  else if(d.heard) addBubble('user', esc(d.heard));
+
+  if(d.rejected){ addBubble('agent', '<span class="err">'+esc(d.rejected)+'</span>'); return; }
+  if(d.answer) addBubble('agent', esc(d.answer));
+
+  const metaParts=[];
   if(d.tools&&d.tools.length){
-    const r=d.tools.map(t=>'<div>'+esc(t.name)+'('+esc(t.arguments)+') &rarr; <span class="'+(t.available?'avail-true':'avail-false')+'">available='+t.available+'</span></div>').join('');
-    h+=card('Tool calls','<div class="tools">'+r+'</div>');
+    metaParts.push(d.tools.map(t=>esc(t.name)+'('+esc(t.arguments)+')&rarr;<span class="'+(t.available?'avail-true':'avail-false')+'">'+t.available+'</span>').join('  '));
   }
-  if(d.total_ms!=null){
-    const s=Object.entries(d.timing||{}).map(([k,v])=>k+'='+v+'ms').join('  ');
-    h+=card('Timing','<div class="tools">'+esc(s)+'  TOTAL='+d.total_ms+'ms</div>');
-  }
-  outEl.innerHTML=h;
+  if(d.total_ms!=null) metaParts.push('TOTAL='+d.total_ms+'ms');
+  if(metaParts.length) addMeta(metaParts.join('  &middot;  '));
+
   if(d.spoken) speak(d.spoken);
 }
-async function ask(){
-  const t=$('q').value.trim(); if(!t) return;
+
+async function askText(t){
+  t=t.trim(); if(!t) return;
   setStatus('Thinking...'); $('send').disabled=true;
   try{
     const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
-    render(await r.json()); setStatus('');
+    render(await r.json(), t); setStatus('');
   }catch(e){ setStatus('Request failed: '+e.message,'err'); }
   finally{ $('send').disabled=false; }
 }
-$('send').onclick=ask;
-$('q').addEventListener('keydown',e=>{ if(e.key==='Enter') ask(); });
+$('askForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const t=$('q').value.trim(); if(!t) return;
+  $('q').value='';
+  askText(t);
+});
+const starterChip=$('starterChip');
+if(starterChip) starterChip.addEventListener('click', ()=> askText(starterChip.textContent));
+
 const TARGET_RATE=16000;
-let audioCtx,source,processor,chunks=[],recording=false,stream;
-async function startRec(){
-  if(recording) return;
+
+// Hands-free capture: a simple energy-based VAD (RMS over each ~93ms mic
+// buffer), mirroring app/audio/utterance.py's pre-roll/silence logic --
+// but a plain amplitude threshold instead of Silero, since the browser
+// has no server-side model to call. The same speech-onset event both (a)
+// starts capturing a new utterance and (b) interrupts whatever reply is
+// currently playing, exactly like AutoListener.is_speech_active powers
+// barge-in for the CLI's --listen mode.
+const PRE_ROLL_S=0.5, MIN_SILENCE_S=0.6, MIN_UTTERANCE_S=0.3, MAX_UTTERANCE_S=30;
+const SPEECH_RMS=0.02;       // amplitude above this counts as "speech"
+const ONSET_CONFIRM_CHUNKS=2; // consecutive loud chunks required to confirm onset, so a single noise spike can't trigger it
+
+let audioCtx,source,processor,stream,listening=false;
+let preRoll=[],preRollSamples=0,loudStreak=0;
+let uttChunks=[],uttRecording=false,uttStartedAt=0,uttLastSpeechAt=0;
+let uttQueue=[],sending=false;
+const micBtn=$('mic');
+
+function rms(buf){ let s=0; for(let i=0;i<buf.length;i++) s+=buf[i]*buf[i]; return Math.sqrt(s/buf.length); }
+
+function onAudioChunk(inp,rate){
+  const level=rms(inp);
+  levelEl.style.width=Math.min(100,level*600)+'%';
+  const now=performance.now()/1000;
+  loudStreak=level>SPEECH_RMS ? loudStreak+1 : 0;
+
+  if(!uttRecording){
+    preRoll.push(inp); preRollSamples+=inp.length;
+    const maxPreRoll=Math.round(PRE_ROLL_S*rate);
+    while(preRollSamples>maxPreRoll && preRoll.length>1) preRollSamples-=preRoll.shift().length;
+
+    if(loudStreak>=ONSET_CONFIRM_CHUNKS){
+      uttRecording=true; uttChunks=preRoll; preRoll=[]; preRollSamples=0;
+      uttStartedAt=now; uttLastSpeechAt=now;
+      micBtn.classList.add('speaking');
+      if(currentAudio && !currentAudio.paused){ currentAudio.pause(); currentAudio=null; setStatus('Interrupted -- listening...'); }
+      else setStatus('Listening...');
+    }
+    return;
+  }
+
+  uttChunks.push(inp);
+  if(level>SPEECH_RMS) uttLastSpeechAt=now;
+  const elapsed=now-uttStartedAt, silence=now-uttLastSpeechAt;
+  if(silence>=MIN_SILENCE_S || elapsed>=MAX_UTTERANCE_S){
+    const merged=flatten(uttChunks);
+    uttRecording=false; uttChunks=[];
+    micBtn.classList.remove('speaking');
+    if(merged.length/rate>=MIN_UTTERANCE_S) uttQueue.push({samples:merged,rate});
+    processQueue();
+  }
+}
+
+async function processQueue(){
+  if(sending || !uttQueue.length) return;
+  sending=true;
+  const {samples,rate}=uttQueue.shift();
+  const wav=encodeWav(downsample(samples,rate,TARGET_RATE),TARGET_RATE);
+  setStatus('Sending '+(wav.byteLength/1024).toFixed(0)+' KB...');
+  try{ const r=await fetch('/api/voice',{method:'POST',body:form(wav)}); render(await r.json()); }
+  catch(e){ setStatus('Upload failed: '+e.message,'err'); }
+  sending=false;
+  if(uttQueue.length) processQueue();
+  else if(listening) setStatus('Listening...');
+}
+function form(wav){ const f=new FormData(); f.append('audio',new Blob([wav],{type:'audio/wav'}),'turn.wav'); return f; }
+
+async function startListening(){
+  if(listening) return;
   try{ stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}}); }
   catch(e){ setStatus('Microphone blocked: '+e.message+' (browsers require HTTPS or localhost)','err'); return; }
   audioCtx=new (window.AudioContext||window.webkitAudioContext)();
   source=audioCtx.createMediaStreamSource(stream);
   processor=audioCtx.createScriptProcessor(4096,1,1);
-  chunks=[]; recording=true;
+  preRoll=[]; preRollSamples=0; loudStreak=0; uttChunks=[]; uttRecording=false;
+  listening=true;
   processor.onaudioprocess=e=>{
-    if(!recording) return;
-    const inp=e.inputBuffer.getChannelData(0);
-    chunks.push(new Float32Array(inp));
-    let p=0; for(let i=0;i<inp.length;i++) p=Math.max(p,Math.abs(inp[i]));
-    levelEl.style.width=Math.min(100,p*300)+'%';
+    if(!listening) return;
+    onAudioChunk(new Float32Array(e.inputBuffer.getChannelData(0)), audioCtx.sampleRate);
   };
   source.connect(processor); processor.connect(audioCtx.destination);
-  $('mic').classList.add('rec'); $('mic').textContent='Recording - release to send';
+  micBtn.classList.add('listening');
+  micBtn.title='Tap to stop listening';
   setStatus('Listening...');
 }
-async function stopRec(){
-  if(!recording) return;
-  recording=false;
-  $('mic').classList.remove('rec'); $('mic').textContent='Hold to talk';
-  levelEl.style.width='0%';
+
+function stopListening(){
+  if(!listening) return;
+  listening=false;
   processor.disconnect(); source.disconnect();
   stream.getTracks().forEach(t=>t.stop());
-  const rate=audioCtx.sampleRate; await audioCtx.close();
-  const merged=flatten(chunks);
-  if(!merged.length){ setStatus('Nothing captured.','err'); return; }
-  const peak=merged.reduce((m,v)=>Math.max(m,Math.abs(v)),0);
-  if(peak<0.01){ setStatus('Captured '+merged.length+' samples but peak was '+peak.toFixed(4)+' - the mic is producing silence.','err'); return; }
-  const wav=encodeWav(downsample(merged,rate,TARGET_RATE),TARGET_RATE);
-  setStatus('Sending '+(wav.byteLength/1024).toFixed(0)+' KB (peak '+peak.toFixed(3)+')...');
-  const form=new FormData();
-  form.append('audio',new Blob([wav],{type:'audio/wav'}),'turn.wav');
-  try{ const r=await fetch('/api/voice',{method:'POST',body:form}); render(await r.json()); setStatus(''); }
-  catch(e){ setStatus('Upload failed: '+e.message,'err'); }
+  audioCtx.close();
+  if(currentAudio){ currentAudio.pause(); currentAudio=null; }
+  micBtn.classList.remove('listening','speaking');
+  micBtn.title='Tap to speak';
+  levelEl.style.width='0%';
+  setStatus('');
 }
 function flatten(bufs){ let n=0; for(const b of bufs) n+=b.length;
   const o=new Float32Array(n); let k=0; for(const b of bufs){ o.set(b,k); k+=b.length; } return o; }
@@ -152,12 +356,7 @@ function encodeWav(samples,rate){
   }
   return buf;
 }
-const mic=$('mic');
-mic.addEventListener('mousedown',startRec);
-mic.addEventListener('mouseup',stopRec);
-mic.addEventListener('mouseleave',()=>{ if(recording) stopRec(); });
-mic.addEventListener('touchstart',e=>{ e.preventDefault(); startRec(); });
-mic.addEventListener('touchend',e=>{ e.preventDefault(); stopRec(); });
+micBtn.addEventListener('click',()=> listening?stopListening():startListening());
 </script>
 </body>
 </html>

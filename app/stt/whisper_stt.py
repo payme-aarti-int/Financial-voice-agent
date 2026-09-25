@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import io
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -72,6 +75,29 @@ class WhisperSTT:
         )
 
 
+def _vad_speech_bounds(audio: np.ndarray, sample_rate: int) -> tuple[int, int] | None:
+    """Locate where speech starts and ends using the same Silero VAD
+    faster-whisper bundles (already used for WhisperSTT's vad_filter and
+    the --listen endpointer in app/audio/utterance.py). Returns None if no
+    speech is found at all, so a caller can skip a wasted API round trip
+    on pure silence/noise instead of sending it off to be transcribed.
+    """
+    from faster_whisper.vad import VadOptions, get_speech_timestamps
+    from app.config import STT
+
+    options = VadOptions(min_silence_duration_ms=STT.vad_min_silence_ms)
+    timestamps = get_speech_timestamps(audio, options, sampling_rate=sample_rate)
+    if not timestamps:
+        return None
+
+    # A little padding either side so a fast VAD onset/offset doesn't clip
+    # the first or last word.
+    pad = int(0.2 * sample_rate)
+    start = max(0, timestamps[0]["start"] - pad)
+    end = min(len(audio), timestamps[-1]["end"] + pad)
+    return start, end
+
+
 class GroqSTT:
     """Groq-hosted whisper-large-v3-turbo — faster than local CPU Whisper."""
 
@@ -83,6 +109,29 @@ class GroqSTT:
         self._client = httpx.Client(timeout=30)
 
     def transcribe(self, audio: np.ndarray, sample_rate: int = 16000) -> Transcript:
+        from app.config import STT
+
+        duration_s = len(audio) / sample_rate
+
+        if STT.vad_filter:
+            try:
+                bounds = _vad_speech_bounds(audio, sample_rate)
+            except Exception:
+                log.warning("VAD check failed -- sending audio to Groq unfiltered", exc_info=True)
+                bounds = (0, len(audio))
+
+            if bounds is None:
+                # No speech at all: don't spend a network round trip on it.
+                return Transcript(
+                    text="",
+                    language="en",
+                    language_probability=0.0,
+                    audio_duration_s=duration_s,
+                    no_speech_prob=1.0,
+                )
+            start, end = bounds
+            audio = audio[start:end]
+
         buf = io.BytesIO()
         sf.write(buf, audio, sample_rate, format="WAV")
         buf.seek(0)
@@ -105,7 +154,7 @@ class GroqSTT:
                 text=text,
                 language="en",
                 language_probability=1.0,
-                audio_duration_s=len(audio) / sample_rate,
+                audio_duration_s=duration_s,
                 no_speech_prob=0.0 if text else 1.0,
             )
 
@@ -114,7 +163,7 @@ class GroqSTT:
                 text="",
                 language="en",
                 language_probability=0.0,
-                audio_duration_s=len(audio) / sample_rate,
+                audio_duration_s=duration_s,
                 no_speech_prob=1.0,
             )
 
