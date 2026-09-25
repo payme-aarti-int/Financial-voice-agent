@@ -121,6 +121,7 @@ class SpeakRequest(BaseModel):
 @app.post("/api/speak")
 def speak(req: SpeakRequest):
     from app.orpheus_tts import OrpheusTTS, OrpheusConfig
+    from app.tts.engine import trim_wav_bytes
 
     text = req.text.strip()
     if not text:
@@ -136,8 +137,9 @@ def speak(req: SpeakRequest):
         log.error("tts failed: %s", speech.error)
         return JSONResponse({"error": speech.error}, status_code=502)
 
-    log.info("speak: %d bytes in %.0f ms", len(speech.audio), speech.latency_ms or 0)
-    return Response(content=speech.audio, media_type="audio/wav")
+    audio = trim_wav_bytes(speech.audio)
+    log.info("speak: %d bytes (%d trimmed) in %.0f ms", len(speech.audio), len(audio), speech.latency_ms or 0)
+    return Response(content=audio, media_type="audio/wav")
 
 
 @app.get("/audio/sample/{voice}")

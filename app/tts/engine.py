@@ -1,5 +1,6 @@
 from __future__ import annotations
  
+import io
 import logging
 import os
 import shutil
@@ -182,6 +183,46 @@ class PiperEngine:
         pass
 
 
+def _trim_silence(audio: np.ndarray, sample_rate: int) -> np.ndarray:
+    """Trim the dead air Piper/Orpheus/espeak often pad a clip with, using
+    the same Silero VAD used to trim STT input (app/audio/vad.py, shared
+    with app/stt/whisper_stt.py) -- less silent lead-in before the agent's
+    reply is audible, and playback ends right after the last word instead
+    of running on into silence.
+
+    Falls back to the untrimmed clip if VAD finds nothing or errors, so a
+    VAD miss can never mean playing back silence instead of the reply.
+    """
+    try:
+        from app.audio.vad import speech_bounds
+
+        bounds = speech_bounds(np.squeeze(audio), sample_rate)
+    except Exception:
+        log.warning("TTS VAD trim failed -- playing untrimmed audio", exc_info=True)
+        return audio
+    if bounds is None:
+        return audio
+    start, end = bounds
+    return audio[start:end]
+
+
+def trim_wav_bytes(wav_bytes: bytes) -> bytes:
+    """Same silence trim as `play()`, but for a WAV already in memory --
+    e.g. app/api.py's /api/speak, which streams Orpheus's response
+    straight to the browser and never touches disk or `play()`. Falls
+    back to the original bytes if decoding/re-encoding fails.
+    """
+    try:
+        audio, sample_rate = sf.read(io.BytesIO(wav_bytes), dtype="float32")
+        trimmed = _trim_silence(audio, sample_rate)
+        out = io.BytesIO()
+        sf.write(out, trimmed, sample_rate, format="WAV")
+        return out.getvalue()
+    except Exception:
+        log.warning("Could not trim WAV bytes -- returning untrimmed audio", exc_info=True)
+        return wav_bytes
+
+
 def play(
     wav_path: str | Path,
     interrupt: Callable[[], bool] | None = None,
@@ -201,6 +242,7 @@ def play(
 
     try:
         audio, sample_rate = sf.read(str(wav_path), dtype="float32")
+        audio = _trim_silence(audio, sample_rate)
         duration_s = len(audio) / sample_rate
         sd.play(np.squeeze(audio), sample_rate, device=AUDIO.device)
 

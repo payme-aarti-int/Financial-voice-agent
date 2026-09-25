@@ -75,29 +75,6 @@ class WhisperSTT:
         )
 
 
-def _vad_speech_bounds(audio: np.ndarray, sample_rate: int) -> tuple[int, int] | None:
-    """Locate where speech starts and ends using the same Silero VAD
-    faster-whisper bundles (already used for WhisperSTT's vad_filter and
-    the --listen endpointer in app/audio/utterance.py). Returns None if no
-    speech is found at all, so a caller can skip a wasted API round trip
-    on pure silence/noise instead of sending it off to be transcribed.
-    """
-    from faster_whisper.vad import VadOptions, get_speech_timestamps
-    from app.config import STT
-
-    options = VadOptions(min_silence_duration_ms=STT.vad_min_silence_ms)
-    timestamps = get_speech_timestamps(audio, options, sampling_rate=sample_rate)
-    if not timestamps:
-        return None
-
-    # A little padding either side so a fast VAD onset/offset doesn't clip
-    # the first or last word.
-    pad = int(0.2 * sample_rate)
-    start = max(0, timestamps[0]["start"] - pad)
-    end = min(len(audio), timestamps[-1]["end"] + pad)
-    return start, end
-
-
 class GroqSTT:
     """Groq-hosted whisper-large-v3-turbo — faster than local CPU Whisper."""
 
@@ -115,7 +92,8 @@ class GroqSTT:
 
         if STT.vad_filter:
             try:
-                bounds = _vad_speech_bounds(audio, sample_rate)
+                from app.audio.vad import speech_bounds
+                bounds = speech_bounds(audio, sample_rate, min_silence_ms=STT.vad_min_silence_ms)
             except Exception:
                 log.warning("VAD check failed -- sending audio to Groq unfiltered", exc_info=True)
                 bounds = (0, len(audio))
