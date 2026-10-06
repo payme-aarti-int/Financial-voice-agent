@@ -87,3 +87,4 @@ data/knowledge_graph*.png
 mlruns/
 mlflow.db
 mlartifacts/
+.env.save
