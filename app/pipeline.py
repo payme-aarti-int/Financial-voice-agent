@@ -11,7 +11,7 @@ from app import observability
 from app.agent.loop import AgentTurn, FinancialAgent
 from app.stt.whisper_stt import GroqSTT, Transcript
 from app.telemetry import Telemetry, Turn
-from app.tts.engine import Speech, TTSService
+from app.tts.engine import BaseTTSClient, Speech, get_tts_client
 from app.tts.speakable import to_speakable
 
 REPEAT_PROMPT = "Sorry, I did not catch that. Could you say it again?"
@@ -33,12 +33,12 @@ class Pipeline:
         self,
         stt: GroqSTT | None = None,
         agent: FinancialAgent | None = None,
-        tts: TTSService | None = None,
+        tts: BaseTTSClient | None = None,
         telemetry: Telemetry | None = None,
     ):
         self._stt = stt
         self.agent = agent or FinancialAgent()
-        self.tts = tts or TTSService()
+        self.tts = tts or get_tts_client()
         self.telemetry = telemetry or Telemetry()
         observability.start_pipeline_run()
 

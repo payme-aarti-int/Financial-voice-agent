@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
@@ -39,15 +39,22 @@ def _parse_retry_after(response: httpx.Response) -> float | None:
     return None
 
 
+def _env(name: str, default: str):
+    return field(default_factory=lambda: os.getenv(name, default))
+
+
 @dataclass(frozen=True)
 class OrpheusConfig:
-    base_url: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-    api_key: str = os.getenv("LLM_API_KEY", "")
-    model: str = os.getenv("TTS_MODEL", "canopylabs/orpheus-v1-english")
-    voice: str = os.getenv("TTS_VOICE", "tara")
-    response_format: str = os.getenv("TTS_FORMAT", "wav")
-    path: str = os.getenv("TTS_PATH", "/audio/speech")
-    timeout_s: float = float(os.getenv("TTS_TIMEOUT_S", "30"))
+    """Groq Orpheus settings, read from .env at instantiation (not import)
+    so TTS_PROVIDER switching and tests see the current environment."""
+
+    base_url: str = _env("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+    api_key: str = _env("LLM_API_KEY", "")
+    model: str = _env("TTS_MODEL", "canopylabs/orpheus-v1-english")
+    voice: str = _env("TTS_VOICE", "tara")
+    response_format: str = _env("TTS_FORMAT", "wav")
+    path: str = _env("TTS_PATH", "/audio/speech")
+    timeout_s: float = field(default_factory=lambda: float(os.getenv("TTS_TIMEOUT_S", "30")))
 
 
 @dataclass

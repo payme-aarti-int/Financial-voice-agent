@@ -8,7 +8,7 @@ from mlflow.entities import SpanType
 
 from app import observability
 from app.agent.tools import ToolRegistry
-from app.llm.client import LLMClient
+from app.llm.client import BaseLLMClient, get_llm_client
  
 MAX_ITERATIONS = 4
 
@@ -55,10 +55,10 @@ class AgentTurn:
 class FinancialAgent:
     def __init__(
         self,
-        client: LLMClient | None = None,
+        client: BaseLLMClient | None = None,
         registry: ToolRegistry | None = None,
     ):
-        self.client = client or LLMClient()
+        self.client = client or get_llm_client()
         self.registry = registry or ToolRegistry()
         # Alternating user/assistant messages from past turns, so "what
         # about Q2?" resolves against what was just discussed. Only the
