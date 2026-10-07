@@ -9,7 +9,7 @@ from mlflow.entities import SpanType
 
 from app import observability
 from app.agent.loop import AgentTurn, FinancialAgent
-from app.stt.whisper_stt import GroqSTT, Transcript
+from app.stt.whisper_stt import BaseSTT, Transcript, get_stt_client
 from app.telemetry import Telemetry, Turn
 from app.tts.engine import BaseTTSClient, Speech, get_tts_client
 from app.tts.speakable import to_speakable
@@ -31,7 +31,7 @@ class PipelineResult:
 class Pipeline:
     def __init__(
         self,
-        stt: GroqSTT | None = None,
+        stt: BaseSTT | None = None,
         agent: FinancialAgent | None = None,
         tts: BaseTTSClient | None = None,
         telemetry: Telemetry | None = None,
@@ -43,10 +43,11 @@ class Pipeline:
         observability.start_pipeline_run()
 
     @property
-    def stt(self) -> GroqSTT:
-        """Loaded lazily: text-only runs should not pay for model load."""
+    def stt(self) -> BaseSTT:
+        """Loaded lazily: text-only runs should not pay for model load.
+        Which engine is built comes from STT_PROVIDER in .env."""
         if self._stt is None:
-            self._stt = GroqSTT()
+            self._stt = get_stt_client()
         return self._stt
 
     def _finish(self, result: PipelineResult) -> PipelineResult:

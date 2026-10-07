@@ -205,25 +205,35 @@ class GroqLLMClient(_OpenAICompatLLMClient):
         super().__init__(config)
 
 
+def _env_first(*names: str, default: str = "") -> str:
+    """First non-empty value among several env var names (lets a renamed
+    variable keep honouring its old spelling)."""
+    for name in names:
+        value = os.getenv(name, "")
+        if value:
+            return value
+    return default
+
+
 class VLLMClient(_OpenAICompatLLMClient):
-    """Company vLLM endpoint (OpenAI-compatible). Reads COMPANY_LLM_BASE_URL,
-    COMPANY_LLM_MODEL, COMPANY_LLM_API_KEY (optional -- vLLM usually runs
-    without auth)."""
+    """vLLM endpoint (OpenAI-compatible, incl. tool calling). Reads
+    VLLM_BASE_URL, VLLM_MODEL, VLLM_API_KEY (optional -- vLLM usually runs
+    without auth). The older COMPANY_LLM_* names are still honoured."""
 
     def __init__(self, config: LLMConfig | None = None):
         if config is None:
-            base_url = os.getenv("COMPANY_LLM_BASE_URL", "http://localhost:8000/v1")
-            model = os.getenv("COMPANY_LLM_MODEL", "")
-            if not base_url:
-                raise ValueError("LLM_PROVIDER=vllm but COMPANY_LLM_BASE_URL is empty -- set it in .env")
+            base_url = _env_first(
+                "VLLM_BASE_URL", "COMPANY_LLM_BASE_URL", default="http://localhost:8000/v1"
+            )
+            model = _env_first("VLLM_MODEL", "COMPANY_LLM_MODEL")
             if not model:
                 raise ValueError(
-                    "LLM_PROVIDER=vllm but COMPANY_LLM_MODEL is empty -- set it in .env "
-                    "(e.g. COMPANY_LLM_MODEL=Qwen/Qwen2.5-7B-Instruct)"
+                    "LLM_PROVIDER=vllm but VLLM_MODEL is empty -- set it in .env "
+                    "(e.g. VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct)"
                 )
             config = LLMConfig(
                 base_url=base_url,
-                api_key=os.getenv("COMPANY_LLM_API_KEY", ""),
+                api_key=_env_first("VLLM_API_KEY", "COMPANY_LLM_API_KEY"),
                 model=model,
             )
         super().__init__(config)
@@ -236,10 +246,8 @@ class LlamaCppClient(_OpenAICompatLLMClient):
 
     def __init__(self, config: LLMConfig | None = None):
         if config is None:
-            base_url = os.getenv("LLAMACPP_BASE_URL", "http://localhost:8080/v1")
+            base_url = os.getenv("LLAMACPP_BASE_URL") or "http://localhost:8080/v1"
             model = os.getenv("LLAMACPP_MODEL", "")
-            if not base_url:
-                raise ValueError("LLM_PROVIDER=llamacpp but LLAMACPP_BASE_URL is empty -- set it in .env")
             if not model:
                 raise ValueError(
                     "LLM_PROVIDER=llamacpp but LLAMACPP_MODEL is empty -- set it in .env "
@@ -267,8 +275,8 @@ def get_llm_client() -> BaseLLMClient:
     cls = LLM_PROVIDERS.get(provider)
     if cls is None:
         raise ValueError(
-            f"Unknown LLM_PROVIDER={provider!r} -- set LLM_PROVIDER in .env to one of: "
-            + ", ".join(LLM_PROVIDERS)
+            f"Unknown LLM_PROVIDER: {provider}. Valid: " + ", ".join(LLM_PROVIDERS)
+            + " -- set LLM_PROVIDER in .env"
         )
     log.info("LLM_PROVIDER=%s -> %s", provider, cls.__name__)
     return cls()
