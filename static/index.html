@@ -237,6 +237,26 @@ let vadInstance = null;
 let listening = false;
 const micBtn = $('mic');
 
+// vad-web 0.0.7 hard-codes channelCount/autoGainControl in its getUserMedia call,
+// which raises "invalid constraints" on some Mac/browser combos. Acquire the stream
+// ourselves with minimal constraints and hand it to MicVAD instead.
+async function openMic() {
+  const simple = { audio: { echoCancellation: true, noiseSuppression: true } };
+  try { return await navigator.mediaDevices.getUserMedia(simple); }
+  catch (e) {
+    if (e.name !== 'OverconstrainedError' && e.name !== 'TypeError') throw e;
+    return await navigator.mediaDevices.getUserMedia({ audio: true });
+  }
+}
+
+async function newMicVAD(options) {
+  const stream = await openMic();
+  const md = navigator.mediaDevices, original = md.getUserMedia;
+  md.getUserMedia = async () => stream;
+  try { return await vad.MicVAD.new(options); }
+  finally { md.getUserMedia = original; }
+}
+
 async function startListening() {
   if (listening) return;
   if (!navigator.mediaDevices) {
@@ -244,7 +264,7 @@ async function startListening() {
     return;
   }
   try {
-    vadInstance = await vad.MicVAD.new({
+    vadInstance = await newMicVAD({
       model: "v5",
       positiveSpeechThreshold: 0.6,
       negativeSpeechThreshold: 0.45,

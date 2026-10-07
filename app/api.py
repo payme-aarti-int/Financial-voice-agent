@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import io
 import logging
+import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -120,7 +122,6 @@ class SpeakRequest(BaseModel):
 
 @app.post("/api/speak")
 def speak(req: SpeakRequest):
-    from app.orpheus_tts import OrpheusTTS, OrpheusConfig
     from app.tts.engine import trim_wav_bytes
 
     text = req.text.strip()
@@ -129,16 +130,21 @@ def speak(req: SpeakRequest):
 
     log.info("speak: %d chars", len(text))
 
-    tts = OrpheusTTS(OrpheusConfig())
-    speech = tts.synthesize(text)
-    tts.close()
+    # Reuse the factory-built client (TTS_PROVIDER, e.g. Kokoro) already loaded by
+    # the pipeline. Per-request temp file so concurrent calls don't share reply.wav.
+    started = time.perf_counter()
+    with tempfile.TemporaryDirectory() as tmp:
+        speech = pipeline.tts.synthesize(text, Path(tmp) / "speak.wav")
+        if not speech.ok:
+            log.error("tts failed: %s", speech.error)
+            return JSONResponse({"error": speech.error or "TTS failed"}, status_code=502)
+        wav_bytes = speech.wav_path.read_bytes()
 
-    if not speech.ok:
-        log.error("tts failed: %s", speech.error)
-        return JSONResponse({"error": speech.error}, status_code=502)
-
-    audio = trim_wav_bytes(speech.audio)
-    log.info("speak: %d bytes (%d trimmed) in %.0f ms", len(speech.audio), len(audio), speech.latency_ms or 0)
+    audio = trim_wav_bytes(wav_bytes)
+    log.info(
+        "speak: %d bytes (%d trimmed) in %.0f ms",
+        len(wav_bytes), len(audio), (time.perf_counter() - started) * 1000,
+    )
     return Response(content=audio, media_type="audio/wav")
 
 
