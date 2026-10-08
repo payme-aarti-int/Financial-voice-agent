@@ -244,8 +244,16 @@ async function openMic() {
   const simple = { audio: { echoCancellation: true, noiseSuppression: true } };
   try { return await navigator.mediaDevices.getUserMedia(simple); }
   catch (e) {
-    if (e.name !== 'OverconstrainedError' && e.name !== 'TypeError') throw e;
-    return await navigator.mediaDevices.getUserMedia({ audio: true });
+    console.warn('getUserMedia with echo/noise constraints failed:', e.name, e.message, '-- retrying with {audio:true}');
+    try { return await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e2) {
+      console.error('getUserMedia({audio:true}) failed:', e2.name, e2.message);
+      if (e2.name === 'NotFoundError' || e2.name === 'DevicesNotFoundError')
+        throw new Error('No microphone detected. Connect a mic or headset, or type your question below.');
+      if (e2.name === 'NotAllowedError' || e2.name === 'PermissionDeniedError')
+        throw new Error('Microphone access denied. Allow it in the browser/site settings and try again.');
+      throw new Error(e2.name + ': ' + e2.message);
+    }
   }
 }
 
