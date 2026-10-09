@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Callable
 
 from app import observability
 from app.financial.financials import METRICS, FinancialsRepository
+
+log = logging.getLogger(__name__)
 
 _METRIC_LIST = ", ".join(sorted(METRICS))
 
@@ -118,6 +121,26 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "search_web",
+            "description": (
+                "Search the web for current information that is not in the local "
+                "data. Use for recent RBI announcements, regulatory updates, or "
+                "current market rates. DO NOT use for the company's P&L data or "
+                "any question the local dataset tools can answer."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string"},
+                    "max_results": {"type": "integer", "default": 3},
+                },
+                "required": ["question"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_overview",
             "description": "Find out what data is available. Takes no arguments.",
             "parameters": {"type": "object", "properties": {}},
@@ -150,6 +173,12 @@ class ToolRegistry:
             "search_rbi_data": self._search_rbi,
             "search_knowledge_graph": self._search_graph,
         }
+
+        try:
+            from app.tools.web_search import search_web
+            self._handlers["search_web"] = search_web
+        except Exception as exc:
+            log.warning("search_web unavailable: %s", exc)
 
     def _search_rbi(self, question: str, year: int | None = None, top_k: int = 3) -> dict:
         try:
@@ -206,7 +235,14 @@ class ToolRegistry:
             "RBI weekly reserve money data is also available (July 2001 to August 2020) "
             "via search_rbi_data. "
             "A knowledge graph of regulatory relationships is also available "
-            "via search_knowledge_graph for questions about rules and requirements."
+            "via search_knowledge_graph for questions about rules and requirements. "
+            + (
+                "Web search is available via search_web for current information "
+                "outside these datasets, such as recent RBI announcements or "
+                "market rates; never use it for the company's P&L figures."
+                if "search_web" in self._handlers
+                else ""
+            )
         )
 
     def execute(self, name: str, raw_arguments: str) -> dict:
