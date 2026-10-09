@@ -126,8 +126,8 @@
   .ask-bar button:active { transform:scale(.97); }
   .ask-bar button:disabled { opacity:.5; cursor:not-allowed; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.wasm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.31/dist/bundle.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -158,6 +158,8 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+// One conversation per page load; the server keeps follow-up history per session.
+const SESSION_ID = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
 const statusEl = $('status'), outEl = $('out'), levelEl = $('level'), emptyHint = $('emptyHint');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function setStatus(m,c){ statusEl.textContent=m||''; statusEl.className=c||''; }
@@ -218,7 +220,7 @@ async function askText(t){
   t=t.trim(); if(!t) return;
   setStatus('Thinking...'); $('send').disabled=true;
   try{
-    const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+    const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json','X-Session-Id':SESSION_ID},body:JSON.stringify({text:t})});
     render(await r.json(), t); setStatus('');
   }catch(e){ setStatus('Request failed: '+e.message,'err'); }
   finally{ $('send').disabled=false; }
@@ -232,22 +234,51 @@ $('askForm').addEventListener('submit', (e)=>{
 const starterChip=$('starterChip');
 if(starterChip) starterChip.addEventListener('click', ()=> askText(starterChip.textContent));
 
-const TARGET_RATE = 16000;
+const TARGET_RATE = 16000;   // vad-web always delivers 16 kHz Float32 samples
+const VAD_CDN = 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.31/dist/';
+const ORT_CDN = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
 let vadInstance = null;
+let micStream = null;
 let listening = false;
 const micBtn = $('mic');
 
-// vad-web 0.0.7 hard-codes channelCount/autoGainControl in its getUserMedia call,
-// which raises "invalid constraints" on some Mac/browser combos. Acquire the stream
-// ourselves with minimal constraints and hand it to MicVAD instead.
+// Float32 [-1,1] samples -> 16-bit PCM mono WAV (what /api/voice decodes with soundfile).
+function encodeWav(samples, sampleRate) {
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buf);
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);            // fmt chunk size
+  view.setUint16(20, 1, true);             // PCM
+  view.setUint16(22, 1, true);             // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // byte rate
+  view.setUint16(32, 2, true);             // block align
+  view.setUint16(34, 16, true);            // bits per sample
+  writeString(view, 36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return buf;
+}
+function writeString(view, offset, str) {
+  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+// Minimal constraints: channelCount/sampleRate/autoGainControl raise "invalid
+// constraints" on some Mac/browser combos. Passed to MicVAD via `getStream`.
 async function openMic() {
   const simple = { audio: { echoCancellation: true, noiseSuppression: true } };
-  try { return await navigator.mediaDevices.getUserMedia(simple); }
+  try { micStream = await navigator.mediaDevices.getUserMedia(simple); }
   catch (e) {
-    console.warn('getUserMedia with echo/noise constraints failed:', e.name, e.message, '-- retrying with {audio:true}');
-    try { return await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    console.warn('[MIC] getUserMedia with echo/noise constraints failed:', e.name, e.message, '-- retrying with {audio:true}');
+    try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
     catch (e2) {
-      console.error('getUserMedia({audio:true}) failed:', e2.name, e2.message);
+      console.error('[MIC] getUserMedia({audio:true}) failed:', e2.name, e2.message);
       if (e2.name === 'NotFoundError' || e2.name === 'DevicesNotFoundError')
         throw new Error('No microphone detected. Connect a mic or headset, or type your question below.');
       if (e2.name === 'NotAllowedError' || e2.name === 'PermissionDeniedError')
@@ -255,14 +286,32 @@ async function openMic() {
       throw new Error(e2.name + ': ' + e2.message);
     }
   }
+  console.log('[MIC] stream opened:', micStream.getAudioTracks().map(t => t.label).join(', ') || '(unnamed device)');
+  return micStream;
 }
 
-async function newMicVAD(options) {
-  const stream = await openMic();
-  const md = navigator.mediaDevices, original = md.getUserMedia;
-  md.getUserMedia = async () => stream;
-  try { return await vad.MicVAD.new(options); }
-  finally { md.getUserMedia = original; }
+async function sendTurn(audio) {
+  console.log('[VAD] onSpeechEnd fired, samples:', audio.length, '(' + (audio.length / TARGET_RATE).toFixed(2) + 's)');
+  micBtn.classList.remove('speaking');
+  levelEl.style.width = '0%';
+  setStatus('Sending...');
+  try {
+    const wav = encodeWav(audio, TARGET_RATE);
+    console.log('[VAD] WAV encoded, bytes:', wav.byteLength);
+    const f = new FormData();
+    f.append('audio', new Blob([wav], {type:'audio/wav'}), 'turn.wav');
+    console.log('[VAD] POST /api/voice ...');
+    const r = await fetch('/api/voice', {method:'POST', headers:{'X-Session-Id':SESSION_ID}, body:f});
+    console.log('[VAD] response status:', r.status);
+    const data = await r.json();
+    console.log('[VAD] response:', data);
+    render(data);
+  } catch(e) {
+    console.error('[VAD] send failed:', e.name, e.message, e.stack);
+    setStatus('Upload failed: ' + e.message, 'err');
+    return;
+  }
+  if (listening) setStatus('Listening...');
 }
 
 async function startListening() {
@@ -271,15 +320,24 @@ async function startListening() {
     setStatus('Microphone blocked: browsers require HTTPS or localhost', 'err');
     return;
   }
+  if (typeof vad === 'undefined') {
+    setStatus('Voice detection library failed to load (check network / ad blocker)', 'err');
+    return;
+  }
+  setStatus('Starting microphone...');
   try {
-    vadInstance = await newMicVAD({
+    vadInstance = await vad.MicVAD.new({
       model: "v5",
+      baseAssetPath: VAD_CDN,
+      onnxWASMBasePath: ORT_CDN,
+      getStream: openMic,
       positiveSpeechThreshold: 0.6,
       negativeSpeechThreshold: 0.45,
       minSpeechFrames: 4,
       preSpeechPadFrames: 10,
       redemptionFrames: 8,
       onSpeechStart: () => {
+        console.log('[VAD] speech started');
         if (currentAudio && !currentAudio.paused) {
           currentAudio.pause(); currentAudio = null;
           setStatus('Interrupted — listening...');
@@ -289,22 +347,9 @@ async function startListening() {
         micBtn.classList.add('speaking');
         levelEl.style.width = '60%';
       },
-      onSpeechEnd: async (audio) => {
-        micBtn.classList.remove('speaking');
-        levelEl.style.width = '0%';
-        setStatus('Sending...');
-        const wav = encodeWav(audio, TARGET_RATE);
-        const f = new FormData();
-        f.append('audio', new Blob([wav], {type:'audio/wav'}), 'turn.wav');
-        try {
-          const r = await fetch('/api/voice', {method:'POST', body:f});
-          render(await r.json());
-        } catch(e) {
-          setStatus('Upload failed: ' + e.message, 'err');
-        }
-        if (listening) setStatus('Listening...');
-      },
+      onSpeechEnd: sendTurn,
       onVADMisfire: () => {
+        console.log('[VAD] misfire (too short)');
         micBtn.classList.remove('speaking');
         levelEl.style.width = '0%';
         if (listening) setStatus('Listening...');
@@ -315,16 +360,21 @@ async function startListening() {
     micBtn.classList.add('listening');
     micBtn.title = 'Tap to stop listening';
     setStatus('Listening...');
+    console.log('[VAD] started');
   } catch(e) {
+    console.error('[VAD] init error:', e);
     setStatus('Microphone error: ' + e.message, 'err');
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
   }
 }
 
 function stopListening() {
   if (!listening) return;
   listening = false;
-  if (vadInstance) { vadInstance.pause(); vadInstance = null; }
+  if (vadInstance) { try { vadInstance.destroy(); } catch(e) { console.warn('[VAD] destroy failed', e); } vadInstance = null; }
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  console.log('[VAD] stopped');
   micBtn.classList.remove('listening', 'speaking');
   micBtn.title = 'Tap to speak';
   levelEl.style.width = '0%';
