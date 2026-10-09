@@ -3,12 +3,16 @@ from __future__ import annotations
 import io
 import logging
 import tempfile
+import threading
 import time
+from collections import OrderedDict
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Header, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel
 
@@ -21,6 +25,30 @@ STATIC = Path(__file__).resolve().parent.parent / "static"
 app = FastAPI(title="Financial Voice Agent")
 
 pipeline = Pipeline()
+
+# The agent keeps conversation history for follow-ups ("what about Q2?"), but
+# the API serves many browsers from one Pipeline. Keep a history per session
+# (X-Session-Id, new on every page load) so one client's conversation cannot
+# leak into -- or derail -- another's. The lock serialises pipeline runs,
+# which the single local LLM effectively does anyway.
+MAX_SESSIONS = 200
+_sessions: OrderedDict[str, list[dict[str, str]]] = OrderedDict()
+_pipeline_lock = threading.Lock()
+
+
+@contextmanager
+def _session(session_id: str | None):
+    key = (session_id or "").strip()[:64] or "anonymous"
+    with _pipeline_lock:
+        history = _sessions.pop(key, [])
+        pipeline.agent.history = history
+        try:
+            yield
+        finally:
+            _sessions[key] = pipeline.agent.history
+            pipeline.agent.history = []
+            while len(_sessions) > MAX_SESSIONS:
+                _sessions.popitem(last=False)
 
 
 class Question(BaseModel):
@@ -66,14 +94,15 @@ def health():
 
 
 @app.post("/api/ask")
-def ask(question: Question):
+def ask(question: Question, x_session_id: str | None = Header(default=None)):
     text = question.text.strip()
     if not text:
         return JSONResponse({"error": "empty question"}, status_code=400)
 
     log.info("ask: %s", text)
     try:
-        result = pipeline.run_text(text, autoplay=False)
+        with _session(x_session_id):
+            result = pipeline.run_text(text, autoplay=False)
     except Exception as exc:
         log.exception("ask failed")
         return JSONResponse({"error": f"{type(exc).__name__}: {exc}"}, status_code=502)
@@ -82,7 +111,7 @@ def ask(question: Question):
 
 
 @app.post("/api/voice")
-async def voice(audio: UploadFile = File(...)):
+async def voice(audio: UploadFile = File(...), x_session_id: str | None = Header(default=None)):
     raw = await audio.read()
     log.info("voice: %d bytes", len(raw))
 
@@ -109,8 +138,12 @@ async def voice(audio: UploadFile = File(...)):
             "peak": peak,
         }
 
+    def _run():
+        with _session(x_session_id):
+            return pipeline.run_audio(samples, autoplay=False)
+
     try:
-        result = pipeline.run_audio(samples, autoplay=False)
+        result = await run_in_threadpool(_run)
     except Exception as exc:
         log.exception("voice failed")
         return JSONResponse({"error": f"{type(exc).__name__}: {exc}"}, status_code=502)

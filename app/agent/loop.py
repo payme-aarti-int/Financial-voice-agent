@@ -12,10 +12,12 @@ from app.llm.client import BaseLLMClient, get_llm_client
  
 MAX_ITERATIONS = 4
 
-# How many past exchanges (user question + final answer) stay in context for
-# follow-ups like "what about Q2?". Intermediate tool-call messages within a
-# single ask() are NOT kept across turns -- only the final Q&A -- so history
-# doesn't balloon with stale tool JSON.
+# How many past exchanges stay in context for follow-ups like "what about
+# Q2?". Each turn is kept whole -- question, tool calls, tool results, final
+# answer -- because small local models (Qwen 7B) otherwise learn from the
+# bare Q&A history that answers appear without tool calls, and start
+# inventing figures on the second turn. Tool results here are a few numbers,
+# so six full turns stay well within context.
 MAX_HISTORY_TURNS = 6
  
 SYSTEM_PROMPT = """You are a financial assistant answering questions by voice.
@@ -30,13 +32,21 @@ for that period, and state what period you do have. Never estimate, never \
 extrapolate, never substitute a nearby month.
 - Do not perform arithmetic yourself. If you need a total or a change, call \
 the tool that computes it.
+- When comparing periods, pass the earlier period as period_a and the later \
+as period_b; "change" and "direction" describe the move from period_a to \
+period_b.
+- Earlier answers in this conversation are not a data source. Every question \
+that needs a figure, including follow-ups like "what about Q2?" or "how does \
+that compare?", requires a fresh tool call in this turn before you answer.
  
 YOUR ANSWER WILL BE READ ALOUD. So:
 - Plain sentences only. No markdown, no bullet points, no headings, no \
 asterisks, no tables.
 - Keep it to one to three sentences. A listener cannot re-read.
-- Round naturally when speaking: 1779000 becomes "about 1.8 million dollars". \
-State exact figures only when the user asks for exact numbers.
+- Round naturally when speaking, and get the unit right: 19940 is "about \
+20 thousand dollars", 405200 is "about 405 thousand dollars", 1779000 is \
+"about 1.8 million dollars". State exact figures only when the user asks \
+for exact numbers.
 - Never read out a date as "2025-03". Say "March".
  
 {context}"""
@@ -60,11 +70,11 @@ class FinancialAgent:
     ):
         self.client = client or get_llm_client()
         self.registry = registry or ToolRegistry()
-        # Alternating user/assistant messages from past turns, so "what
-        # about Q2?" resolves against what was just discussed. Only the
-        # final Q&A per turn is kept -- not the tool-call messages inside
-        # a single ask() -- so this doesn't balloon with stale tool JSON.
-        self.history: list[dict[str, str]] = []
+        # Messages from past turns (user, assistant tool calls, tool results,
+        # final assistant answer), so "what about Q2?" resolves against what
+        # was just discussed AND the model keeps seeing that figures come
+        # from tool calls. Trimmed to MAX_HISTORY_TURNS whole turns.
+        self.history: list[dict[str, Any]] = []
 
     def _system_message(self) -> dict[str, str]:
         return {
@@ -76,12 +86,15 @@ class FinancialAgent:
         """Start a fresh conversation -- e.g. between independent eval cases."""
         self.history = []
 
-    def _remember(self, question: str, answer: str) -> None:
-        self.history.append({"role": "user", "content": question})
+    def _remember(self, turn_messages: list[dict[str, Any]], answer: str) -> None:
+        """Keep this turn's messages (user question through tool results)
+        plus the final answer, then drop the oldest whole turns beyond
+        MAX_HISTORY_TURNS -- a turn starts at each user message."""
+        self.history.extend(turn_messages)
         self.history.append({"role": "assistant", "content": answer})
-        max_messages = MAX_HISTORY_TURNS * 2
-        if len(self.history) > max_messages:
-            self.history = self.history[-max_messages:]
+        starts = [i for i, m in enumerate(self.history) if m.get("role") == "user"]
+        if len(starts) > MAX_HISTORY_TURNS:
+            self.history = self.history[starts[-MAX_HISTORY_TURNS]:]
 
     @observability.trace(name="agent.ask", span_type=SpanType.AGENT)
     def ask(self, question: str) -> AgentTurn:
@@ -91,6 +104,7 @@ class FinancialAgent:
             *self.history,
             {"role": "user", "content": question},
         ]
+        turn_start = len(messages) - 1
 
         for iteration in range(1, MAX_ITERATIONS + 1):
             turn.iterations = iteration
@@ -104,7 +118,7 @@ class FinancialAgent:
 
             if not requested:
                 turn.answer = (message.get("content") or "").strip()
-                self._remember(question, turn.answer)
+                self._remember(messages[turn_start:], turn.answer)
                 return turn
 
             messages.append(message)
@@ -130,7 +144,7 @@ class FinancialAgent:
         turn.answer = (
             "I could not work that out reliably. Could you rephrase the question?"
         )
-        self._remember(question, turn.answer)
+        self._remember(messages[turn_start:], turn.answer)
         return turn
 
     def close(self) -> None:
