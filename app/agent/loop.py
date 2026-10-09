@@ -49,7 +49,8 @@ asterisks, no tables.
 for exact numbers.
 - Never read out a date as "2025-03". Say "March".
  
-{context}"""
+{context}
+- For questions about recent events, current regulations, or anything outside the local dataset, call search_web immediately without asking permission. Never say "would you like me to search" — just search."""
  
  
 @dataclass
