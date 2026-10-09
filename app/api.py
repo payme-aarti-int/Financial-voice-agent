@@ -52,7 +52,12 @@ def _serialise(result) -> dict:
 
 @app.get("/")
 def index():
-    return FileResponse(STATIC / "index.html")
+    # Never let browsers cache the page: a stale copy keeps running old JS
+    # (and old CDN bundle versions) long after a deploy.
+    return FileResponse(
+        STATIC / "index.html",
+        headers={"Cache-Control": "no-store, must-revalidate", "Pragma": "no-cache"},
+    )
 
 
 @app.get("/health")
