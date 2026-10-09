@@ -30,6 +30,10 @@ def test_groq_is_the_default_llm_provider(monkeypatch):
     ],
 )
 def test_llm_provider_is_selected_from_env(monkeypatch, provider, cls, base_url_var, model_var):
+    # The COMPANY_LLM_* aliases only apply when VLLM_* are unset, so clear any
+    # values a developer's .env may have loaded.
+    for var in ("VLLM_BASE_URL", "VLLM_MODEL", "VLLM_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("LLM_PROVIDER", provider)
     monkeypatch.setenv(base_url_var, "http://example.test/v1")
     monkeypatch.setenv(model_var, "some-model")

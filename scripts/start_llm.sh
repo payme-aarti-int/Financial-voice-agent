@@ -1,8 +1,12 @@
 #!/bin/bash
-# Start llama-server with optimized settings.
+# Start llama-server with optimized settings for Apple Silicon (M4 Max):
+#   --ctx-size 32768      32K context for long conversations + tool history
+#   --flash-attn on       flash attention: faster, less memory
+#   --cache-type-k/v q8_0 8-bit KV cache (~half the memory of f16 at 32K)
 # All llama.cpp logs go to /tmp/llama-server.log (not the terminal).
+# Override the model with LLAMACPP_MODEL_PATH (e.g. the 7B GGUF for speed).
 
-MODEL="${LLAMACPP_MODEL_PATH:-$HOME/models/qwen2.5-7b/Qwen2.5-7B-Instruct-Q4_K_M.gguf}"
+MODEL="${LLAMACPP_MODEL_PATH:-$HOME/models/qwen2.5-14b/Qwen2.5-14B-Instruct-Q4_K_M.gguf}"
 PORT="${LLAMACPP_PORT:-8080}"
 LOG=/tmp/llama-server.log
 
@@ -12,12 +16,13 @@ if [ ! -f "$MODEL" ]; then
   exit 1
 fi
 
+echo "[LLM] Stopping any existing llama-server..."
+pkill -f llama-server 2>/dev/null
+sleep 2
+
 echo "[LLM] Starting llama-server..."
 echo "[LLM] Model: $MODEL"
 echo "[LLM] Logs:  $LOG"
-
-pkill -f llama-server 2>/dev/null
-sleep 2
 
 llama-server \
   --model "$MODEL" \
