@@ -14,7 +14,6 @@ from pydantic import BaseModel
 
 from app.pipeline import Pipeline
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("api")
 
 STATIC = Path(__file__).resolve().parent.parent / "static"

@@ -260,7 +260,7 @@ class KokoroTTS(BaseTTSClient):
         try:
             from kokoro import KPipeline
 
-            self._pipeline = KPipeline(lang_code=self.lang_code)
+            self._pipeline = KPipeline(lang_code=self.lang_code, repo_id="hexgrad/Kokoro-82M")
         except ImportError:
             self._init_error = "kokoro not installed (pip install kokoro) -- set TTS_PROVIDER to another engine or install it"
         except Exception as exc:  # noqa: BLE001
