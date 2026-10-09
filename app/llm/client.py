@@ -3,6 +3,7 @@ from __future__ import annotations   # MUST be first statement
 import json
 import logging
 import os
+import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -38,6 +39,24 @@ class LLMConfig:
 
     temperature: float = 0.2
     max_tokens: int = 2048
+
+
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
+_THINK_OPEN_UNCLOSED = re.compile(r"<think>.*\Z", re.DOTALL)
+
+
+def _strip_thinking(text: str) -> str:
+    """Remove DeepSeek-R1 style <think>...</think> reasoning from model
+    output, leaving only the answer. An unclosed <think> (hit max_tokens
+    mid-reasoning) is dropped too so no half-thought gets spoken."""
+    if "<think>" not in text:
+        return text
+    thinking = re.findall(r"<think>(.*?)</think>", text, re.DOTALL)
+    if thinking:
+        log.debug("model reasoning: %s", thinking[0][:200])
+    text = _THINK_BLOCK.sub("", text)
+    text = _THINK_OPEN_UNCLOSED.sub("", text)
+    return text.strip()
 
 
 @dataclass
@@ -127,10 +146,24 @@ class _OpenAICompatLLMClient(BaseLLMClient):
         choice = data["choices"][0]
         message = choice["message"]
 
+        # Reasoning models (DeepSeek-R1 and distils served via vLLM/llama.cpp)
+        # wrap their chain-of-thought in <think>...</think> inside content.
+        # Strip it from both the Completion and the raw message, because the
+        # agent loop reads raw["choices"][0]["message"] and would otherwise
+        # speak the reasoning aloud or feed it back as history.
+        content = _strip_thinking(message.get("content") or "")
+        if "content" in message:
+            message["content"] = content
+        # DeepSeek's API returns the reasoning in a separate field and rejects
+        # requests that echo it back in assistant messages (400), so drop it
+        # from the message the agent loop appends to the conversation.
+        reasoning = message.pop("reasoning_content", None) or message.pop("reasoning", None)
+        if reasoning:
+            log.debug("model reasoning: %s", reasoning[:200])
+
         # reasoning models put output in 'reasoning' when content is empty
-        content = message.get("content") or ""
-        if not content.strip():
-            content = message.get("reasoning") or message.get("reasoning_content") or ""
+        if not content.strip() and reasoning and not message.get("tool_calls"):
+            content = reasoning
 
         return Completion(
             text=content,
@@ -187,7 +220,7 @@ class _OpenAICompatLLMClient(BaseLLMClient):
 
         return (
             Completion(
-                text="".join(parts),
+                text=_strip_thinking("".join(parts)),
                 ttft_ms=ttft_ms,
                 total_ms=(time.perf_counter() - start) * 1000,
             ),
@@ -261,10 +294,37 @@ class LlamaCppClient(_OpenAICompatLLMClient):
         super().__init__(config)
 
 
+class DeepSeekClient(_OpenAICompatLLMClient):
+    """DeepSeek's hosted API (https://api.deepseek.com, OpenAI-compatible,
+    incl. tool calling). Reads DEEPSEEK_API_KEY, DEEPSEEK_MODEL (default
+    deepseek-chat; deepseek-reasoner for R1) and DEEPSEEK_BASE_URL. R1-style
+    <think> blocks and the separate reasoning_content field are stripped by
+    the shared transport so only the answer reaches the agent."""
+
+    DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
+    DEFAULT_MODEL = "deepseek-chat"
+
+    def __init__(self, config: LLMConfig | None = None):
+        if config is None:
+            api_key = os.getenv("DEEPSEEK_API_KEY", "")
+            if not api_key:
+                log.warning(
+                    "DEEPSEEK_API_KEY is empty -- DeepSeek requests will be rejected; set it in .env"
+                )
+            config = LLMConfig(
+                base_url=os.getenv("DEEPSEEK_BASE_URL") or self.DEFAULT_BASE_URL,
+                api_key=api_key,
+                model=os.getenv("DEEPSEEK_MODEL") or self.DEFAULT_MODEL,
+                timeout_s=float(os.getenv("DEEPSEEK_TIMEOUT_S") or os.getenv("LLM_TIMEOUT_S", "60")),
+            )
+        super().__init__(config)
+
+
 LLM_PROVIDERS: dict[str, type[BaseLLMClient]] = {
     "groq": GroqLLMClient,
     "vllm": VLLMClient,
     "llamacpp": LlamaCppClient,
+    "deepseek": DeepSeekClient,
 }
 
 
